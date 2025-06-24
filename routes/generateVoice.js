@@ -21,11 +21,11 @@ router.post("/", async (req, res) => {
 
   try {
     console.log("🛠 Calling ElevenLabs with voice parameters...");
-    
+
     // Parse voice category and style
     let voiceCategory = 'male';
     let voiceStyleName = 'Default Male';
-    
+
     if (voiceStyle && voiceStyle.includes(':')) {
       const parts = voiceStyle.split(':');
       voiceCategory = parts[0];
@@ -33,7 +33,7 @@ router.post("/", async (req, res) => {
     } else if (voiceStyle) {
       voiceStyleName = voiceStyle;
     }
-    
+
     // Pass parsed parameters to the voice generation function
     const filePath = await generateVoiceAudio(text, voiceCategory, voiceStyleName, toneStyle);
     console.log("✅ Voice generated at:", filePath);

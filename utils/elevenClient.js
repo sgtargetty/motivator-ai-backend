@@ -38,6 +38,10 @@ const VOICE_CATALOG = {
     'Meditation Guru': '29vD33N1CtxCmqQRPOHJ', // Drew - Peaceful, zen
     'Drill Instructor': 'TxGEqnHWrfWFTfGW9XjX', // Josh - Military, commanding
     'Cheerleader Coach': 'EXAVITQu4vr4xnSDxMaL', // Bella - Peppy, encouraging
+    // 🎭 CUSTOM VOICES - Your ElevenLabs Creations
+    'Lana Croft': 'QXEkTn58Ik1IKjIMk8QA', // Adventure hero, tomb raider spirit
+    'Baxter Jordan': 'xFhB0ETJT3eAfKLqQ2NA', // Dark analyst, methodical precision  
+    'Argent': 'Z7sbvjjgVPfOSMUrfJT1', // Advanced AI assistant, JARVIS-like
   }
 };
 
@@ -83,9 +87,18 @@ const TONE_VOICE_SETTINGS = {
 
 // Helper function to get voice ID from category and style
 function getVoiceId(voiceCategory, voiceStyle) {
+  console.log('🔍 DEBUG - Looking for:', voiceCategory, voiceStyle);
+  console.log('🔍 DEBUG - Available characters:', Object.keys(VOICE_CATALOG.characters || {}));
+  console.log('🔍 DEBUG - Lana Croft in catalog?', VOICE_CATALOG.characters['Lana Croft']);
+  console.log('🔍 DEBUG - Direct lookup result:', VOICE_CATALOG[voiceCategory] && VOICE_CATALOG[voiceCategory][voiceStyle]);
+  
   if (VOICE_CATALOG[voiceCategory] && VOICE_CATALOG[voiceCategory][voiceStyle]) {
-    return VOICE_CATALOG[voiceCategory][voiceStyle];
+    const foundVoiceId = VOICE_CATALOG[voiceCategory][voiceStyle];
+    console.log('🔍 DEBUG - Found voice ID:', foundVoiceId);
+    return foundVoiceId;
   }
+  
+  console.log('🔍 DEBUG - Voice not found, using fallback');
   
   // Fallback logic
   if (voiceCategory === 'male') {
@@ -93,6 +106,7 @@ function getVoiceId(voiceCategory, voiceStyle) {
   } else if (voiceCategory === 'female') {
     return VOICE_CATALOG.female['Default Female'];
   } else if (voiceCategory === 'characters') {
+    console.log('🔍 DEBUG - Using Robot Assistant fallback');
     return VOICE_CATALOG.characters['Robot Assistant'];
   }
   
