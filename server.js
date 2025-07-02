@@ -3,6 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import generateLine from "./routes/generateLine.js";
 import generateVoice from "./routes/generateVoice.js";
+import processSpeech from "./routes/processSpeech.js";
+
 
 dotenv.config();
 
@@ -18,6 +20,7 @@ app.get("/", (req, res) => {
 });
 app.use("/generate-line", generateLine);
 app.use("/generate-voice", generateVoice);
+app.use("/process-speech", processSpeech);
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Server is now actively listening on http://0.0.0.0:${PORT}`);
