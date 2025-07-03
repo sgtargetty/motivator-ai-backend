@@ -1,4 +1,4 @@
-// routes/processSpeech.js - COMPLETE UPGRADE: GPT-4.1 + GPT-4o Transcribe + Enhanced Date Parsing
+// routes/processSpeech.js - COMPLETE FILE WITH GLOBAL TIMEZONE SUPPORT
 import express from "express";
 import { OpenAI } from "openai";
 import dotenv from "dotenv";
@@ -19,7 +19,7 @@ const upload = multer({
 });
 
 router.post("/", upload.single('audio'), async (req, res) => {
-  console.log("🚀🚀🚀 UPGRADED AI DICTAPHONE: GPT-4.1 + GPT-4o Transcribe 🚀🚀🚀");
+  console.log("🚀🚀🚀 GLOBAL AI DICTAPHONE: GPT-4.1 + GPT-4o + Worldwide Timezone 🚀🚀🚀");
   
   try {
     console.log("🎤 Processing speech file with premium models...");
@@ -78,7 +78,7 @@ router.post("/", upload.single('audio'), async (req, res) => {
     const transcribedText = transcription.text;
     console.log("📝 Transcribed text (GPT-4o):", transcribedText);
 
-    // 🤖 STEP 2: Extract structured data using UPGRADED GPT-4.1 with enhanced date parsing
+    // 🤖 STEP 2: Extract structured data using UPGRADED GPT-4.1 with GLOBAL timezone support
     console.log("🧠 Extracting structured data with GPT-4.1 (flagship model)...");
     
     // 📅 Get current date context for GPT
@@ -87,68 +87,87 @@ router.post("/", upload.single('audio'), async (req, res) => {
     const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }); // "Monday", "Tuesday", etc.
     const currentTime = now.toTimeString().split(' ')[0]; // HH:MM:SS format
     
-    console.log(`📅 Current context: ${currentDay}, ${currentDate} ${currentTime}`);
+    // 🌍 NEW: Get timezone information from Flutter client (user's actual device timezone)
+    const userTimezone = req.body.userTimezone || 'UTC'; // e.g., "EDT", "PST", "JST"
+    const timezoneOffset = req.body.timezoneOffset || '+00:00'; // e.g., "-04:00", "+09:00"
+    const timezoneOffsetHours = parseInt(req.body.timezoneOffsetHours || '0'); // e.g., -4, +9
+    
+    console.log(`🌍 User's actual timezone: ${userTimezone} (UTC${timezoneOffset})`);
+    console.log(`📅 Current context: ${currentDay}, ${currentDate} ${currentTime} (Server time)`);
+    console.log(`👤 User's local time context: UTC${timezoneOffset}`);
     
     const enhancedExtractionPrompt = `
 You are an AI assistant that extracts structured information from transcribed speech about tasks and activities.
 
 IMPORTANT CONTEXT:
 - Current date: ${currentDate} (${currentDay})
-- Current time: ${currentTime}
+- Current time: ${currentTime} (server time)
+- User's timezone: ${userTimezone} (UTC${timezoneOffset})
+- CRITICAL: Generate ALL dates in the user's timezone (UTC${timezoneOffset})
 
 Analyze this transcribed text and extract the following information in JSON format:
 
 {
   "what": "The main task or activity described",
-  "when": "PARSED_DATETIME_IN_ISO_FORMAT",
+  "when": "PARSED_DATETIME_IN_ISO_FORMAT_USER_TIMEZONE",
   "where": "Location information mentioned (or 'Not specified' if none)",
   "why": "The purpose or reason mentioned (or 'Not specified' if none)",
   "how": "The method or approach mentioned (or 'Not specified' if none)"
 }
 
 CRITICAL DATE PARSING RULES FOR "when" FIELD:
-1. If specific date/time mentioned, convert to ISO format: "2025-08-14T15:30:00.000Z"
-2. Handle natural language dates:
-   - "Friday" = this coming Friday at 9:00 AM
-   - "Friday at 3 PM" = this coming Friday at 3:00 PM
-   - "tomorrow" = ${new Date(now.getTime() + 24*60*60*1000).toISOString().split('T')[0]}T09:00:00.000Z
-   - "next week" = ${new Date(now.getTime() + 7*24*60*60*1000).toISOString().split('T')[0]}T09:00:00.000Z
-   - "next month the 14th" = next month's 14th at 9:00 AM
-   - "Monday morning" = this coming Monday at 9:00 AM
-   - "Wednesday at 2:30" = this coming Wednesday at 2:30 PM
-   - "in 2 hours" = ${new Date(now.getTime() + 2*60*60*1000).toISOString()}
-   - "this afternoon" = today at 2:00 PM
-   - "tonight" = today at 7:00 PM
-3. If only time mentioned (e.g., "at 3 PM"), assume today if possible, otherwise tomorrow
-4. Default time: 9:00 AM if no time specified
-5. If no date/time info: "Not specified"
+1. ALWAYS generate dates in the user's timezone (UTC${timezoneOffset})
+2. User timezone is ${userTimezone}, which is ${timezoneOffset} from UTC
+3. If specific date/time mentioned, convert to ISO format in USER'S timezone
+4. Handle natural language dates:
+   - "Friday" = this coming Friday at 9:00 AM (${userTimezone})
+   - "Friday at 3 PM" = this coming Friday at 3:00 PM (${userTimezone})
+   - "12:00 p.m." = 12:00 PM in user's timezone (${userTimezone})
+   - "tomorrow" = ${new Date(now.getTime() + 24*60*60*1000).toISOString().split('T')[0]}T09:00:00${timezoneOffset}
+   - "next week" = ${new Date(now.getTime() + 7*24*60*60*1000).toISOString().split('T')[0]}T09:00:00${timezoneOffset}
+   - "next month the 14th" = next month's 14th at 9:00 AM (${userTimezone})
+   - "Monday morning" = this coming Monday at 9:00 AM (${userTimezone})
+   - "Wednesday at 2:30" = this coming Wednesday at 2:30 PM (${userTimezone})
+   - "in 2 hours" = 2 hours from now in ${userTimezone}
+   - "this afternoon" = today at 2:00 PM (${userTimezone})
+   - "tonight" = today at 7:00 PM (${userTimezone})
+5. If only time mentioned (e.g., "at 3 PM"), assume today if possible, otherwise tomorrow - IN USER'S TIMEZONE
+6. Default time: 9:00 AM if no time specified - IN USER'S TIMEZONE
+7. If no date/time info: "Not specified"
 
-EXAMPLES:
+TIMEZONE EXAMPLES FOR ${userTimezone} (UTC${timezoneOffset}):
 Input: "Haircut appointment Friday at 3 PM"
-Output: "when": "2025-07-04T15:00:00.000Z" (this coming Friday at 3 PM)
+Output: "when": "2025-07-04T15:00:00${timezoneOffset}" (Friday 3 PM in ${userTimezone})
 
-Input: "Dentist next month the 14th at 3:30 PM" 
-Output: "when": "2025-08-14T15:30:00.000Z" (August 14th at 3:30 PM)
+Input: "VA payment on the 29th at 12:00 p.m."
+Output: "when": "2025-07-29T12:00:00${timezoneOffset}" (July 29th at 12:00 PM in ${userTimezone})
 
 Input: "Meeting tomorrow morning"
-Output: "when": "${new Date(now.getTime() + 24*60*60*1000).toISOString().split('T')[0]}T09:00:00.000Z"
+Output: "when": "${new Date(now.getTime() + 24*60*60*1000).toISOString().split('T')[0]}T09:00:00${timezoneOffset}"
 
 Input: "Call mom Wednesday"
-Output: "when": "2025-07-09T09:00:00.000Z" (this coming Wednesday at 9 AM)
+Output: "when": "2025-07-09T09:00:00${timezoneOffset}" (Wednesday 9 AM in ${userTimezone})
 
-Input: "Gym session in 2 hours"
-Output: "when": "${new Date(now.getTime() + 2*60*60*1000).toISOString()}"
+CRITICAL RULE: The user is in ${userTimezone} timezone (UTC${timezoneOffset}). 
+When they say "12:00 p.m." they mean 12:00 PM in THEIR timezone (${userTimezone}), not UTC.
+Always format as: "YYYY-MM-DDTHH:mm:ss${timezoneOffset}"
+
+Examples for different global users:
+- 🇺🇸 New York user (EDT): "2025-07-29T12:00:00-04:00"
+- 🇬🇧 London user (BST): "2025-07-29T12:00:00+01:00"  
+- 🇯🇵 Tokyo user (JST): "2025-07-29T12:00:00+09:00"
+- 🇦🇺 Sydney user (AEST): "2025-07-29T12:00:00+10:00"
 
 Transcribed text: "${transcribedText}"
 
 Respond with ONLY the JSON object, no additional text.`;
 
-    console.log("🧠 Sending enhanced prompt to GPT-4.1...");
+    console.log(`🧠 Sending timezone-enhanced prompt for ${userTimezone} user...`);
 
     const extractionResponse = await openai.chat.completions.create({
       model: "gpt-4.1", // 🚀 UPGRADED from gpt-3.5-turbo
       messages: [
-        { role: "system", content: "You extract structured data from speech and respond only with valid JSON. You are excellent at parsing natural language dates and times into ISO format." },
+        { role: "system", content: "You extract structured data from speech and respond only with valid JSON. You are excellent at parsing natural language dates and times into ISO format in the user's local timezone." },
         { role: "user", content: enhancedExtractionPrompt }
       ],
       max_tokens: 400, // Increased for GPT-4.1
@@ -169,6 +188,7 @@ Respond with ONLY the JSON object, no additional text.`;
             extractedData.when = new Date(now.getTime() + 60*60*1000).toISOString(); // 1 hour from now
           } else {
             console.log(`✅ Valid date parsed: ${parsedDate.toLocaleString()}`);
+            console.log(`🌍 Timezone-aware date for ${userTimezone}: ${extractedData.when}`);
           }
         } catch (dateError) {
           console.warn("⚠️ Date validation error, using fallback");
@@ -198,7 +218,7 @@ Respond with ONLY the JSON object, no additional text.`;
     fs.unlinkSync(properFilePath);
     console.log("🧹 Files cleaned up successfully");
 
-    // Return complete result with model info
+    // Return complete result with model info and timezone context
     const result = {
       success: true,
       transcribedText: transcribedText,
@@ -209,7 +229,9 @@ Respond with ONLY the JSON object, no additional text.`;
         currentContext: {
           date: currentDate,
           day: currentDay,
-          time: currentTime
+          time: currentTime,
+          userTimezone: userTimezone,
+          timezoneOffset: timezoneOffset
         },
         models: {
           transcription: "gpt-4o-transcribe",
@@ -218,7 +240,7 @@ Respond with ONLY the JSON object, no additional text.`;
       }
     };
 
-    console.log("🎯 Sending premium AI response:", result);
+    console.log("🎯 Sending global timezone-enhanced premium AI response:", result);
     res.json(result);
 
   } catch (error) {
