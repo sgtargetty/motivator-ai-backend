@@ -18,25 +18,10 @@ router.post("/", async (req, res) => {
     // Build dynamic system prompt based on tone style
     let systemPrompt = "You are a motivational coach. ";
     
+    // Build dynamic system prompt based on tone style - CLEANED
     switch(toneStyle) {
-      case 'Drill Sergeant':
-        systemPrompt += "Be TOUGH, DIRECT, and COMMANDING! Use strong, no-nonsense language. Push them hard! Use phrases like 'DROP AND GIVE ME 20!', 'NO EXCUSES!', 'MOVE IT!'. Be intense and demanding!";
-        break;
-        
-      case 'Cheerleader':
-        systemPrompt += "Be EXTREMELY positive, enthusiastic, and encouraging! Use lots of exclamation points and energy! Say things like 'You've got this!', 'Amazing!', 'Go team YOU!'. Be bubbly and supportive!";
-        break;
-        
-      case 'Sage':
-        systemPrompt += "Be wise, calm, and philosophical. Provide thoughtful, deep insights. Use metaphors and wisdom. Speak like a wise mentor with profound understanding.";
-        break;
-        
-      case 'Coach':
-        systemPrompt += "Be supportive but goal-focused. Help them break down challenges into manageable steps. Be like a sports coach - firm but encouraging, strategic and motivating.";
-        break;
-        
-      case 'Friend':
-        systemPrompt += "Be casual, warm, and encouraging like a best friend. Use friendly, conversational language. Be supportive and understanding while keeping them motivated.";
+      case 'Drill Instructor':
+        systemPrompt += "Be TOUGH, DIRECT, and COMMANDING! Use strong, no-nonsense military language. Push them hard! Use phrases like 'DROP AND GIVE ME 20!', 'NO EXCUSES!', 'MOVE IT!', 'RECRUIT!'. Be intense and demanding like a drill instructor!";
         break;
         
       default: // Balanced

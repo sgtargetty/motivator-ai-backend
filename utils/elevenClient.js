@@ -45,37 +45,13 @@ const VOICE_CATALOG = {
   }
 };
 
-// Tone Style to Voice Settings mapping (enhanced)
+// Tone Style to Voice Settings mapping - CLEANED
 const TONE_VOICE_SETTINGS = {
-  'Drill Sergeant': {
+  'Drill Instructor': {
     stability: 0.9,
     similarity_boost: 0.9,
     style: 0.1,
     use_speaker_boost: true,
-  },
-  'Cheerleader': {
-    stability: 0.3,
-    similarity_boost: 0.7,
-    style: 0.9,
-    use_speaker_boost: true,
-  },
-  'Sage': {
-    stability: 0.8,
-    similarity_boost: 0.8,
-    style: 0.2,
-    use_speaker_boost: false,
-  },
-  'Coach': {
-    stability: 0.7,
-    similarity_boost: 0.8,
-    style: 0.5,
-    use_speaker_boost: true,
-  },
-  'Friend': {
-    stability: 0.5,
-    similarity_boost: 0.7,
-    style: 0.7,
-    use_speaker_boost: false,
   },
   'Balanced': {
     stability: 0.6,
