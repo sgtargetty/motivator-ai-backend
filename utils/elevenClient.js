@@ -99,7 +99,7 @@ async function connectWebSocketTTS(voiceId, text, voiceSettings) {
     
     // Create WebSocket connection to ElevenLabs
     // 🔍 DEBUG: Check WebSocket URL and headers
-    const websocketUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`;
+    const websocketUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input`;
     console.log("🔍 WebSocket URL:", websocketUrl);
     console.log("🔍 API Key (first 10 chars):", process.env.ELEVENLABS_API_KEY?.substring(0, 10));
 
@@ -118,10 +118,11 @@ async function connectWebSocketTTS(voiceId, text, voiceSettings) {
       
       // Send TTS request
       const request = {
-        text: text,
-        voice_settings: voiceSettings,
-        model_id: "eleven_monolingual_v1",
-      };
+      text: text,
+      voice_settings: voiceSettings,
+      xi_api_key: process.env.ELEVENLABS_API_KEY, // 🔑 CRITICAL: API key in message body
+      model_id: "eleven_monolingual_v1",
+    };
       
       ws.send(JSON.stringify(request));
     });
