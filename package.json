@@ -7,9 +7,15 @@
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
-  "keywords": ["ai", "motivation", "reflection", "dictaphone", "gpt"],
+  "keywords": [
+    "ai",
+    "motivation",
+    "reflection",
+    "dictaphone",
+    "gpt"
+  ],
   "author": "",
-  "license": "ISC", 
+  "license": "ISC",
   "description": "Motivator AI Backend - Mission 1: AI Dictaphone ✅ | Mission 2: Smart Reflection System 🎭",
   "dependencies": {
     "axios": "^1.9.0",
@@ -17,7 +23,8 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "multer": "^1.4.5-lts.1",
-    "openai": "^5.5.1"
+    "openai": "^5.5.1",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

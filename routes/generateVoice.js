@@ -1,5 +1,5 @@
 import express from "express";
-import { generateVoiceAudio } from "../utils/elevenClient.js";
+import { generateVoiceAudioWebSocket, generateVoiceAudio } from "../utils/elevenClient.js";
 import fs from "fs";
 
 const router = express.Router();
@@ -35,7 +35,7 @@ router.post("/", async (req, res) => {
     }
 
     // Pass parsed parameters to the voice generation function
-    const filePath = await generateVoiceAudio(text, voiceCategory, voiceStyleName, toneStyle);
+    const filePath = await generateVoiceAudioWebSocket(text, voiceCategory, voiceStyleName, toneStyle);
     console.log("✅ Voice generated at:", filePath);
 
     res.download(filePath, (err) => {
