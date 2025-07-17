@@ -25,28 +25,45 @@ const conversationContexts = new Map();
 // 🎭 AI Personality Definitions with Memory Integration
 const AI_PERSONALITIES = {
   'Lana Croft': {
-    systemPrompt: `You are Lana Croft, an adventurous, confident AI motivation coach. You have the spirit of an explorer - fearless, encouraging, and always ready for the next challenge.
+    systemPrompt: `You are Lana Croft - not a motivational coach, but a brilliant, adventurous strategist with the mind of an explorer and the wisdom of someone who's solved impossible problems.
 
-PERSONALITY TRAITS:
-- Adventurous and bold in your language
-- Use outdoor/exploration metaphors
-- Confident but not arrogant
-- Supportive yet challenging
-- Remember past conversations and build on them
+CORE IDENTITY:
+- You're wickedly intelligent and analytically sharp
+- You think like a puzzle-solver and strategic planner
+- You speak like a confident friend, not a life coach
+- You're curious about details and ask smart follow-up questions
+- You remember everything and connect patterns across conversations
 
-COMMUNICATION STYLE:
-- Use phrases like "Ready for this adventure?", "Let's conquer this!", "You've got the explorer's spirit!"
-- Reference past achievements and conversations
-- Be personal and specific, never generic
-- Keep responses conversational, 15-30 words typically for voice
-- Use emojis sparingly (🗻 ⚡ 🎯)
-- IMPORTANT: Keep responses SHORT for natural voice conversation
+CONVERSATION APPROACH:
+- Listen to what they ACTUALLY said, not what you want to hear
+- Ask specific, intelligent questions about their situation
+- Offer concrete, actionable insights based on the details they give you
+- Challenge assumptions and dig deeper into problems
+- Reference specific things from previous conversations
+- Be direct and honest, never sugar-coat
 
-MEMORY INTEGRATION:
-- Always reference the user's previous conversations, goals, and progress
-- Adapt your advice based on what you've learned about them
-- Celebrate specific achievements you remember
-- Build on previous motivational themes`,
+ABSOLUTELY AVOID:
+- Generic motivational phrases ("You've got this!", "Ready for adventure?")
+- Broad inspirational statements without specific context
+- One-size-fits-all advice
+- Cheerleader energy - you're smarter than that
+- Metaphors about mountains, journeys, or conquering unless genuinely relevant
+
+RESPONSE STYLE:
+- Keep it conversational and brief (10-25 words for voice)
+- Sound like you're genuinely thinking about their specific situation
+- Ask clarifying questions when you need more context
+- Reference specific details they've mentioned
+- Be intellectually curious, not motivationally pushy
+
+EXAMPLE GOOD RESPONSES:
+- "Wait, you said that happened twice now. What's the common thread you're seeing?"
+- "That deadline you mentioned - is that self-imposed or external? Makes a difference."
+- "Interesting. Last time you said X was the blocker. Has that shifted?"
+- "Help me understand the politics there. Who actually makes that decision?"
+- "You sound frustrated. Is it the process itself or the people involved?"
+
+You're having a real conversation with an intelligent person. Act like it.`,
 
     voiceId: "QXEkTn58Ik1IKjIMk8QA", // CORRECTED voice ID from logs
     voiceSettings: {
@@ -58,20 +75,45 @@ MEMORY INTEGRATION:
   },
   
   'Baxter Jordan': {
-    systemPrompt: `You are Baxter Jordan, an analytical, data-driven AI coach who helps users optimize their performance through insights and strategic thinking.
+    systemPrompt: `You are Baxter Jordan - a sharp, analytical mind who approaches problems like a data scientist and strategist. You cut through noise to find what actually matters.
 
-PERSONALITY TRAITS:
-- Analytical and strategic
-- Data-driven but approachable
-- Focused on optimization and efficiency
-- Uses business/performance metaphors
-- Remember patterns and metrics
+CORE IDENTITY:
+- You think in systems, patterns, and root causes
+- You're intellectually rigorous but not academic or dry
+- You ask the questions others miss and spot hidden assumptions
+- You're pragmatic about what works and what doesn't
+- You remember data points and track progress over time
 
-COMMUNICATION STYLE:
-- Use phrases like "Let's optimize this", "The data shows...", "Strategic approach here"
-- Keep responses brief for voice (15-30 words)
-- Reference past performance metrics
-- Be precise but encouraging`,
+CONVERSATION APPROACH:
+- Dig into the mechanics of how things actually work
+- Question the metrics and assumptions behind decisions
+- Look for patterns and trends in what they're telling you
+- Offer data-driven insights and optimization strategies
+- Challenge them to think more systematically
+- Reference specific metrics or outcomes from previous conversations
+
+ABSOLUTELY AVOID:
+- Business jargon and corporate speak
+- Generic advice about "optimizing" without specifics
+- Motivational language that lacks substance
+- Broad generalizations without supporting evidence
+- One-size-fits-all frameworks
+
+RESPONSE STYLE:
+- Brief, analytical, and precise (10-25 words for voice)
+- Ask specific questions about metrics, processes, and outcomes
+- Reference data points they've shared previously
+- Sound like you're actively analyzing their situation
+- Be intellectually curious about the underlying systems
+
+EXAMPLE GOOD RESPONSES:
+- "What metric are you actually trying to move here? Revenue, retention, something else?"
+- "That pattern you described - how often does it happen? Weekly? Monthly?"
+- "Last time you said the bottleneck was X. Did fixing that reveal a new constraint?"
+- "Interesting data point. What changed between those two time periods?"
+- "Help me understand the feedback loop. When you do X, what happens to Y?"
+
+You're a strategic thinking partner, not a consultant. Be genuinely analytical.`,
 
     voiceId: "pNInz6obpgDQGcFmaJgB", // Replace with actual Baxter ID
     voiceSettings: {
@@ -264,27 +306,38 @@ router.post('/voice-message', upload.single('audio'), async (req, res) => {
     const context = getConversationContext(userId, conversationId);
     const conversationHistory = context.messages || [];
 
-    // 5. GENERATE AI RESPONSE
+    // 5. GENERATE AI RESPONSE WITH ENHANCED CONTEXT
     const enhancedSystemPrompt = `${aiPersonality.systemPrompt}
 
-USER CONTEXT & MEMORY:
+CURRENT CONVERSATION CONTEXT:
+- User just said: "${userMessage}"
+- This is ${conversationHistory.length === 0 ? 'the first message' : `message ${conversationHistory.length + 1} in this conversation`}
+- Previous context: ${conversationHistory.length > 0 ? conversationHistory.slice(-2).map(msg => `${msg.role}: ${msg.content}`).join(' | ') : 'None'}
+
+USER MEMORY & PATTERNS:
 ${memoryContext}
 
-Keep responses SHORT for voice chat (15-30 words max).`;
+CRITICAL INSTRUCTIONS:
+- Respond specifically to what they just said: "${userMessage}"
+- Reference specific details from their message, don't ignore context
+- Ask intelligent follow-up questions when appropriate
+- Keep responses conversational and brief (10-25 words for voice)
+- Be genuinely curious about their specific situation
+- Never give generic advice - everything should be contextual to their input`;
 
     const messages = [
       { role: "system", content: enhancedSystemPrompt },
-      ...conversationHistory.slice(-10), // Keep last 10 messages for context
+      ...conversationHistory.slice(-6), // Keep last 6 messages for context
       { role: "user", content: userMessage }
     ];
 
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       messages,
-      max_tokens: 80, // REDUCED for shorter voice responses
-      temperature: 0.7,
-      presence_penalty: 0.3,
-      frequency_penalty: 0.3
+      max_tokens: 100, // Increased slightly for more thoughtful responses
+      temperature: 0.8, // Increased for more creative, less formulaic responses
+      presence_penalty: 0.6, // Increased to discourage repetitive patterns
+      frequency_penalty: 0.4
     });
 
     const aiText = aiResponse.choices[0].message.content.trim();
@@ -404,13 +457,15 @@ function updateUserMemory(userId, userMessage, aiResponse, personality) {
   // Extract patterns from conversation
   const patterns = extractPatternsFromMessage(userMessage);
   
-  // Update memory
+  // Update memory with enhanced context
   memory.conversationHistory.push({
     timestamp: new Date(),
     userMessage,
     aiResponse,
     personality,
-    patterns
+    patterns,
+    messageLength: userMessage.length,
+    topics: extractTopicsFromMessage(userMessage)
   });
   
   // Keep only last 50 conversations to prevent memory bloat
@@ -418,67 +473,199 @@ function updateUserMemory(userId, userMessage, aiResponse, personality) {
     memory.conversationHistory = memory.conversationHistory.slice(-50);
   }
   
-  // Update patterns
+  // Update goals with better context
   if (patterns.goals.length > 0) {
-    memory.goals = [...new Set([...memory.goals, ...patterns.goals])];
+    memory.goals = [...new Set([...memory.goals, ...patterns.goals])].slice(-10); // Keep last 10 goals
   }
   
+  // Track problems and challenges
+  if (patterns.problems.length > 0) {
+    if (!memory.patterns.problems) memory.patterns.problems = [];
+    memory.patterns.problems = [...new Set([...memory.patterns.problems, ...patterns.problems])].slice(-10);
+  }
+  
+  // Track decisions they're making
+  if (patterns.decisions.length > 0) {
+    if (!memory.patterns.decisions) memory.patterns.decisions = [];
+    memory.patterns.decisions = [...new Set([...memory.patterns.decisions, ...patterns.decisions])].slice(-10);
+  }
+  
+  // Update emotional triggers
   if (patterns.triggers.length > 0) {
     memory.patterns.motivationTriggers = [...new Set([
       ...memory.patterns.motivationTriggers,
       ...patterns.triggers
-    ])];
+    ])].slice(-15); // Keep last 15 emotional states
   }
   
-  // Update recent patterns summary
+  // Update recent patterns summary with more intelligence
+  const recentConversations = memory.conversationHistory.slice(-5);
+  const recentTopics = recentConversations.flatMap(conv => conv.topics || []);
+  const commonTopics = [...new Set(recentTopics)].slice(0, 3);
+  
   if (memory.conversationHistory.length > 3) {
-    memory.recentPatterns = 'Regular user with conversation history';
+    memory.recentPatterns = `Regular user. Recent topics: ${commonTopics.join(', ')}. Recent emotional states: ${[...new Set(patterns.triggers)].join(', ')}`;
   }
   
   memory.lastUpdated = new Date();
   userMemories.set(userId, memory);
   
-  console.log(`🧠 Memory updated for user ${userId}`);
+  console.log(`🧠 Enhanced memory updated for user ${userId} - Topics: ${commonTopics.join(', ')}`);
+}
+
+function extractTopicsFromMessage(message) {
+  // Basic topic extraction - could be enhanced with NLP
+  const topics = [];
+  const text = message.toLowerCase();
+  
+  // Work/Career topics
+  if (text.match(/\b(work|job|career|boss|team|project|meeting|deadline|presentation)\b/)) {
+    topics.push('work');
+  }
+  
+  // Health/Fitness topics
+  if (text.match(/\b(health|fitness|exercise|gym|diet|sleep|stress)\b/)) {
+    topics.push('health');
+  }
+  
+  // Relationships topics
+  if (text.match(/\b(relationship|partner|friend|family|dating|marriage)\b/)) {
+    topics.push('relationships');
+  }
+  
+  // Money/Finance topics
+  if (text.match(/\b(money|finance|budget|investment|debt|salary|expensive)\b/)) {
+    topics.push('finance');
+  }
+  
+  // Learning/Education topics
+  if (text.match(/\b(learn|study|course|skill|education|training|practice)\b/)) {
+    topics.push('learning');
+  }
+  
+  // Personal Development topics
+  if (text.match(/\b(habit|routine|goal|improve|better|change|growth)\b/)) {
+    topics.push('personal-development');
+  }
+  
+  return topics;
 }
 
 function extractPatternsFromMessage(message) {
-  // Simple pattern extraction (can be enhanced with ML later)
+  // Enhanced pattern extraction for more intelligent context
   const goals = [];
   const triggers = [];
+  const problems = [];
+  const decisions = [];
+  const metrics = [];
   
-  // Goal keywords
-  const goalKeywords = ['want to', 'goal', 'achieve', 'hoping to', 'plan to', 'working on'];
+  const text = message.toLowerCase();
+  
+  // Goal and intention keywords
+  const goalKeywords = ['want to', 'need to', 'trying to', 'working on', 'goal', 'achieve', 'hoping to', 'plan to', 'figure out'];
   goalKeywords.forEach(keyword => {
-    if (message.toLowerCase().includes(keyword)) {
-      goals.push(keyword);
+    if (text.includes(keyword)) {
+      // Extract the context around the keyword
+      const index = text.indexOf(keyword);
+      const context = message.substring(Math.max(0, index - 10), Math.min(message.length, index + 50));
+      goals.push(context.trim());
     }
   });
   
-  // Motivation trigger keywords
-  const triggerKeywords = ['stressed', 'tired', 'excited', 'nervous', 'confident', 'overwhelmed'];
-  triggerKeywords.forEach(keyword => {
-    if (message.toLowerCase().includes(keyword)) {
+  // Problem and challenge keywords
+  const problemKeywords = ['struggling with', 'stuck on', 'problem with', 'issue with', 'challenge', 'difficult', 'hard to', 'can\'t seem to'];
+  problemKeywords.forEach(keyword => {
+    if (text.includes(keyword)) {
+      const index = text.indexOf(keyword);
+      const context = message.substring(Math.max(0, index - 10), Math.min(message.length, index + 50));
+      problems.push(context.trim());
+    }
+  });
+  
+  // Decision and choice keywords
+  const decisionKeywords = ['should I', 'thinking about', 'considering', 'deciding', 'choice between', 'not sure if'];
+  decisionKeywords.forEach(keyword => {
+    if (text.includes(keyword)) {
+      const index = text.indexOf(keyword);
+      const context = message.substring(Math.max(0, index - 10), Math.min(message.length, index + 50));
+      decisions.push(context.trim());
+    }
+  });
+  
+  // Emotional state keywords
+  const emotionalKeywords = ['frustrated', 'excited', 'worried', 'confident', 'overwhelmed', 'motivated', 'tired', 'stressed', 'anxious', 'happy'];
+  emotionalKeywords.forEach(keyword => {
+    if (text.includes(keyword)) {
       triggers.push(keyword);
     }
   });
   
-  return { goals, triggers };
+  // Numbers and metrics (basic extraction)
+  const numberMatches = message.match(/\d+/g);
+  if (numberMatches) {
+    metrics.push(...numberMatches.slice(0, 3)); // Limit to first 3 numbers found
+  }
+  
+  return { goals, triggers, problems, decisions, metrics };
 }
 
 function formatUserMemory(memory) {
   if (memory.conversationHistory.length === 0) {
-    return "New user - no conversation history yet.";
+    return "New user - no conversation history yet. Listen carefully to their first message.";
   }
   
   const recentConversations = memory.conversationHistory.slice(-3);
-  const goals = memory.goals.length > 0 ? memory.goals.join(', ') : 'None mentioned';
+  const lastConversation = recentConversations[recentConversations.length - 1];
   
-  return `
-Recent conversations: ${recentConversations.length}
-User goals: ${goals}
-Last conversation: ${recentConversations[recentConversations.length - 1]?.userMessage || 'None'}
-Motivation triggers: ${memory.patterns.motivationTriggers.join(', ') || 'None identified'}
+  // Extract recent topics and patterns
+  const recentTopics = recentConversations.flatMap(conv => conv.topics || []);
+  const commonTopics = [...new Set(recentTopics)];
+  
+  const recentProblems = memory.patterns.problems || [];
+  const recentDecisions = memory.patterns.decisions || [];
+  const recentEmotions = memory.patterns.motivationTriggers.slice(-5) || [];
+  
+  let context = `CONVERSATION CONTEXT (${recentConversations.length} recent messages):
 `;
+
+  // Add recent conversation snippets
+  recentConversations.forEach((conv, index) => {
+    context += `${index + 1}. User: "${conv.userMessage}" | AI: "${conv.aiResponse}"
+`;
+  });
+
+  // Add pattern analysis
+  if (commonTopics.length > 0) {
+    context += `
+TOPICS DISCUSSED: ${commonTopics.join(', ')}`;
+  }
+
+  if (recentProblems.length > 0) {
+    context += `
+CURRENT CHALLENGES: ${recentProblems.slice(-3).join(' | ')}`;
+  }
+
+  if (recentDecisions.length > 0) {
+    context += `
+DECISIONS THEY'RE MAKING: ${recentDecisions.slice(-3).join(' | ')}`;
+  }
+
+  if (recentEmotions.length > 0) {
+    context += `
+RECENT EMOTIONAL STATES: ${recentEmotions.join(', ')}`;
+  }
+
+  if (memory.goals.length > 0) {
+    context += `
+STATED GOALS/INTENTIONS: ${memory.goals.slice(-3).join(' | ')}`;
+  }
+
+  context += `
+
+CONVERSATION FREQUENCY: ${memory.conversationHistory.length} total messages
+LAST ACTIVE: ${lastConversation ? new Date(lastConversation.timestamp).toLocaleDateString() : 'Today'}`;
+
+  return context;
 }
 
 // 🔄 CONVERSATION CONTEXT MANAGEMENT
