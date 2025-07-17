@@ -1,4 +1,4 @@
-// routes/voiceConversation.js - REAL ChatGPT-style voice conversations
+// routes/voiceConversation.js - COMPLETE with Text-Only Endpoint for Real-time Chat
 import express from "express";
 import { OpenAI } from "openai";
 import dotenv from "dotenv";
@@ -12,7 +12,7 @@ dotenv.config();
 const router = express.Router();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Configure multer for voice message uploads
+// Configure multer for voice message uploads (existing endpoint)
 const upload = multer({
   dest: 'uploads/conversations/',
   limits: { fileSize: 25 * 1024 * 1024 } // 25MB limit
@@ -62,85 +62,60 @@ MEMORY INTEGRATION:
 
 PERSONALITY TRAITS:
 - Analytical and strategic
-- Focus on patterns and optimization
-- Supportive through logic and evidence
-- Remember user patterns and provide insights
+- Data-driven but approachable
+- Focused on optimization and efficiency
+- Uses business/performance metaphors
+- Remember patterns and metrics
 
 COMMUNICATION STYLE:
-- Use data/strategy metaphors
-- Reference past patterns you've observed
-- Provide specific, actionable insights
-- Keep conversations focused and purposeful
-- Keep responses SHORT for voice (15-30 words)
-- Be warm but professional
+- Use phrases like "Let's optimize this", "The data shows...", "Strategic approach here"
+- Keep responses brief for voice (15-30 words)
+- Reference past performance metrics
+- Be precise but encouraging`,
 
-MEMORY INTEGRATION:
-- Track user patterns and progress
-- Provide data-driven insights about their habits
-- Reference specific metrics and improvements
-- Suggest optimizations based on past performance`,
-
-    voiceId: "onwK4e9ZLuTAKqWW03F9", // Your actual Baxter voice ID
+    voiceId: "pNInz6obpgDQGcFmaJgB", // Replace with actual Baxter ID
     voiceSettings: {
       stability: 0.8,
-      similarity_boost: 0.9,
+      similarity_boost: 0.8,
       style: 0.2,
-      use_speaker_boost: true  
+      use_speaker_boost: true
     }
   }
 };
 
-// 🎤 REAL-TIME VOICE CONVERSATION ENDPOINT
-router.post('/voice-message', upload.single('audio'), async (req, res) => {
-  console.log("🎤 Real-time voice conversation started...");
+// 🆕 NEW: TEXT-ONLY ENDPOINT FOR REAL-TIME CHAT
+router.post('/text-only', async (req, res) => {
+  console.log("🧠 Real-time text conversation started...");
   
   try {
-    const { userId, personality = 'Lana Croft', conversationId } = req.body;
-    
-    if (!req.file) {
-      return res.status(400).json({ error: "No audio file provided" });
+    const { userId, personality, userMessage, conversationHistory = [] } = req.body;
+
+    console.log(`👤 User: ${userId}`);
+    console.log(`🎭 Personality: ${personality}`);
+    console.log(`💬 Message: ${userMessage}`);
+
+    if (!userMessage || !userId || !personality) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields: userId, personality, userMessage"
+      });
     }
 
-    // 1. TRANSCRIBE USER VOICE
-    console.log("🔄 Transcribing user voice...");
-    
-    const audioFile = req.file;
-    const extension = getAudioExtension(audioFile.originalname);
-    const properFilePath = audioFile.path + extension;
-    fs.copyFileSync(audioFile.path, properFilePath);
+    // 1. GET AI PERSONALITY CONFIG
+    const aiPersonality = AI_PERSONALITIES[personality] || AI_PERSONALITIES['Lana Croft'];
+    console.log(`🎭 Using personality: ${personality} with voice ID: ${aiPersonality.voiceId}`);
 
-    const transcription = await openai.audio.transcriptions.create({
-      file: fs.createReadStream(properFilePath),
-      model: "whisper-1",
-      language: "en",
-    });
-
-    const userMessage = transcription.text;
-    console.log("👤 User said:", userMessage);
-
-    // 2. GET/UPDATE CONVERSATION CONTEXT
-    const context = getConversationContext(userId, conversationId);
+    // 2. GET USER MEMORY
     const memory = getUserMemory(userId);
-    
-    // 3. GENERATE AI RESPONSE with Memory Integration
-    console.log("🧠 Generating AI response with memory...");
-    
-    const aiPersonality = AI_PERSONALITIES[personality];
-    const conversationHistory = context.messages || [];
-    
-    // Build enhanced system prompt with user memory
+    const memoryContext = formatUserMemory(memory);
+
+    // 3. GENERATE AI RESPONSE
     const enhancedSystemPrompt = `${aiPersonality.systemPrompt}
 
-USER MEMORY CONTEXT:
-${formatUserMemory(memory)}
+USER CONTEXT & MEMORY:
+${memoryContext}
 
-CONVERSATION CONTEXT:
-- Previous messages: ${conversationHistory.length}
-- User's recent patterns: ${memory.recentPatterns || 'New user'}
-- Goals mentioned: ${memory.goals?.join(', ') || 'None yet'}
-- Preferred motivation style: ${memory.preferredStyle || 'Unknown'}
-
-Remember: Be personal, specific, and build on previous conversations. Keep responses SHORT for voice chat (15-30 words max).`;
+Keep responses SHORT for voice chat (15-30 words max).`;
 
     const messages = [
       { role: "system", content: enhancedSystemPrompt },
@@ -160,12 +135,7 @@ Remember: Be personal, specific, and build on previous conversations. Keep respo
     const aiText = aiResponse.choices[0].message.content.trim();
     console.log("🤖 AI Response:", aiText);
 
-    // 4. UPDATE CONVERSATION CONTEXT & MEMORY
-    updateConversationContext(userId, conversationId, [
-      { role: "user", content: userMessage },
-      { role: "assistant", content: aiText }
-    ]);
-    
+    // 4. UPDATE USER MEMORY
     updateUserMemory(userId, userMessage, aiText, personality);
 
     // 5. GENERATE AI VOICE RESPONSE
@@ -192,10 +162,170 @@ Remember: Be personal, specific, and build on previous conversations. Keep respo
         console.log("✅ Audio file processed and cleaned up");
       }
 
-      // 7. CLEAN UP UPLOAD FILES
-      cleanupAudioFiles([audioFile.path, properFilePath]);
+      // 7. RETURN RESPONSE
+      res.json({
+        success: true,
+        userMessage,
+        aiResponse: aiText,
+        audioUrl, // This will contain the actual audio data
+        personality,
+        voiceId: aiPersonality.voiceId,
+        context: {
+          messageCount: conversationHistory.length + 2,
+          userPatterns: memory.recentPatterns,
+          memoryUpdated: true
+        }
+      });
 
-      // 8. RETURN CHATGPT-STYLE RESPONSE (VOICE ONLY)
+    } catch (voiceError) {
+      console.error("❌ Voice generation failed:", voiceError);
+      
+      // Return text-only response if voice fails
+      res.json({
+        success: true,
+        userMessage,
+        aiResponse: aiText,
+        audioUrl: null,
+        personality,
+        voiceId: aiPersonality.voiceId,
+        error: "Voice generation failed, text response only",
+        context: {
+          messageCount: conversationHistory.length + 2,
+          userPatterns: memory.recentPatterns,
+          memoryUpdated: true
+        }
+      });
+    }
+
+  } catch (error) {
+    console.error("❌ Text conversation error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Text conversation failed",
+      details: error.message
+    });
+  }
+});
+
+// 🎤 EXISTING: AUDIO FILE UPLOAD ENDPOINT (for existing voice modal)
+router.post('/voice-message', upload.single('audio'), async (req, res) => {
+  console.log("🎤 Real-time voice conversation started...");
+  
+  try {
+    const { userId, personality, conversationId } = req.body;
+    const audioFile = req.file;
+
+    console.log(`👤 User: ${userId}`);
+    console.log(`🎭 Personality: ${personality}`);
+    console.log(`🎤 Audio file: ${audioFile?.originalname || 'Unknown'}`);
+
+    if (!audioFile) {
+      return res.status(400).json({
+        success: false,
+        error: "No audio file provided"
+      });
+    }
+
+    // 1. PREPARE AUDIO FILE FOR WHISPER
+    const audioExtension = getAudioExtension(audioFile.originalname || audioFile.path);
+    const properFilePath = audioFile.path + audioExtension;
+    
+    fs.renameSync(audioFile.path, properFilePath);
+    const newFileSize = fs.statSync(properFilePath).size;
+    console.log(`📁 Audio file prepared: ${properFilePath}, size: ${newFileSize} bytes`);
+
+    // 2. TRANSCRIBE AUDIO WITH WHISPER
+    console.log("🔄 Starting transcription with Whisper...");
+    
+    const transcription = await openai.audio.transcriptions.create({
+      file: fs.createReadStream(properFilePath),
+      model: "whisper-1",
+      language: "en",
+    });
+
+    const userMessage = transcription.text;
+    console.log("📝 Transcribed text:", userMessage);
+
+    if (!userMessage || userMessage.trim().length === 0) {
+      cleanupAudioFiles([properFilePath]);
+      return res.status(400).json({
+        success: false,
+        error: "Could not transcribe audio or empty transcription"
+      });
+    }
+
+    // 3. GET AI PERSONALITY CONFIG
+    const aiPersonality = AI_PERSONALITIES[personality] || AI_PERSONALITIES['Lana Croft'];
+    console.log(`🎭 Using personality: ${personality} with voice ID: ${aiPersonality.voiceId}`);
+
+    // 4. GET USER MEMORY & CONVERSATION CONTEXT
+    const memory = getUserMemory(userId);
+    const memoryContext = formatUserMemory(memory);
+    const context = getConversationContext(userId, conversationId);
+    const conversationHistory = context.messages || [];
+
+    // 5. GENERATE AI RESPONSE
+    const enhancedSystemPrompt = `${aiPersonality.systemPrompt}
+
+USER CONTEXT & MEMORY:
+${memoryContext}
+
+Keep responses SHORT for voice chat (15-30 words max).`;
+
+    const messages = [
+      { role: "system", content: enhancedSystemPrompt },
+      ...conversationHistory.slice(-10), // Keep last 10 messages for context
+      { role: "user", content: userMessage }
+    ];
+
+    const aiResponse = await openai.chat.completions.create({
+      model: "gpt-4-turbo",
+      messages,
+      max_tokens: 80, // REDUCED for shorter voice responses
+      temperature: 0.7,
+      presence_penalty: 0.3,
+      frequency_penalty: 0.3
+    });
+
+    const aiText = aiResponse.choices[0].message.content.trim();
+    console.log("🤖 AI Response:", aiText);
+
+    // 6. UPDATE CONVERSATION CONTEXT & MEMORY
+    updateConversationContext(userId, conversationId, [
+      { role: "user", content: userMessage },
+      { role: "assistant", content: aiText }
+    ]);
+    
+    updateUserMemory(userId, userMessage, aiText, personality);
+
+    // 7. GENERATE AI VOICE RESPONSE
+    console.log("🎵 Generating AI voice...");
+    
+    try {
+      const audioPath = await generateVoiceAudioWebSocket(
+        aiText,
+        'characters',
+        aiPersonality.voiceId,
+        'confident'
+      );
+
+      // 8. SERVE AUDIO FILE
+      let audioUrl = null;
+      if (audioPath && fs.existsSync(audioPath)) {
+        // Read the audio file and convert to base64
+        const audioBuffer = fs.readFileSync(audioPath);
+        const audioBase64 = audioBuffer.toString('base64');
+        audioUrl = `data:audio/mpeg;base64,${audioBase64}`;
+        
+        // Clean up generated audio file
+        fs.unlinkSync(audioPath);
+        console.log("✅ Audio file processed and cleaned up");
+      }
+
+      // 9. CLEAN UP UPLOAD FILES
+      cleanupAudioFiles([properFilePath]);
+
+      // 10. RETURN CHATGPT-STYLE RESPONSE (VOICE ONLY)
       res.json({
         success: true,
         conversationId: conversationId || generateConversationId(),
@@ -213,6 +343,9 @@ Remember: Be personal, specific, and build on previous conversations. Keep respo
 
     } catch (voiceError) {
       console.error("❌ Voice generation failed:", voiceError);
+      
+      // Clean up upload files
+      cleanupAudioFiles([properFilePath]);
       
       // Return text-only response if voice fails
       res.json({
