@@ -83,7 +83,7 @@ MEMORY INTEGRATION:
       stability: 0.8,
       similarity_boost: 0.9,
       style: 0.2,
-      use_speaker_boost: true
+      use_speaker_boost: true  
     }
   }
 };
@@ -109,7 +109,7 @@ router.post('/voice-message', upload.single('audio'), async (req, res) => {
 
     const transcription = await openai.audio.transcriptions.create({
       file: fs.createReadStream(properFilePath),
-      model: "gpt-4o-audio", // Latest OpenAI voice model
+      model: "whisper-1", // Latest OpenAI voice model
       language: "en",
       prompt: "This is a motivational conversation with an AI coach."
     });
@@ -148,7 +148,7 @@ Remember: Be personal, specific, and build on previous conversations. No generic
     ];
 
     const aiResponse = await openai.chat.completions.create({
-      model: "gpt-4o", // Latest GPT-4o for conversations
+      model: "gpt-4-turbo", // Latest GPT-4-turbo for conversations
       messages,
       max_tokens: 150,
       temperature: 0.7,
