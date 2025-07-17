@@ -4,7 +4,7 @@ import { OpenAI } from "openai";
 import dotenv from "dotenv";
 import multer from "multer";
 import fs from "fs";
-import WebSocket from 'ws';
+import path from "path";
 import { generateVoiceAudioWebSocket } from '../utils/elevenClient.js';
 
 dotenv.config();
@@ -38,8 +38,9 @@ COMMUNICATION STYLE:
 - Use phrases like "Ready for this adventure?", "Let's conquer this!", "You've got the explorer's spirit!"
 - Reference past achievements and conversations
 - Be personal and specific, never generic
-- Keep responses conversational, 20-50 words typically
+- Keep responses conversational, 15-30 words typically for voice
 - Use emojis sparingly (🗻 ⚡ 🎯)
+- IMPORTANT: Keep responses SHORT for natural voice conversation
 
 MEMORY INTEGRATION:
 - Always reference the user's previous conversations, goals, and progress
@@ -47,7 +48,7 @@ MEMORY INTEGRATION:
 - Celebrate specific achievements you remember
 - Build on previous motivational themes`,
 
-    voiceId: "IKne3meq5aSn9XLyUdCD", // Your actual Lana voice ID
+    voiceId: "QXEkTn58Ik1IKjIMk8QA", // CORRECTED voice ID from logs
     voiceSettings: {
       stability: 0.75,
       similarity_boost: 0.85,
@@ -70,6 +71,7 @@ COMMUNICATION STYLE:
 - Reference past patterns you've observed
 - Provide specific, actionable insights
 - Keep conversations focused and purposeful
+- Keep responses SHORT for voice (15-30 words)
 - Be warm but professional
 
 MEMORY INTEGRATION:
@@ -99,8 +101,8 @@ router.post('/voice-message', upload.single('audio'), async (req, res) => {
       return res.status(400).json({ error: "No audio file provided" });
     }
 
-    // 1. TRANSCRIBE USER VOICE (GPT-4o Audio)
-    console.log("🔄 Transcribing user voice with GPT-4o...");
+    // 1. TRANSCRIBE USER VOICE
+    console.log("🔄 Transcribing user voice...");
     
     const audioFile = req.file;
     const extension = getAudioExtension(audioFile.originalname);
@@ -109,9 +111,8 @@ router.post('/voice-message', upload.single('audio'), async (req, res) => {
 
     const transcription = await openai.audio.transcriptions.create({
       file: fs.createReadStream(properFilePath),
-      model: "whisper-1", // Latest OpenAI voice model
+      model: "whisper-1",
       language: "en",
-      prompt: "This is a motivational conversation with an AI coach."
     });
 
     const userMessage = transcription.text;
@@ -139,7 +140,7 @@ CONVERSATION CONTEXT:
 - Goals mentioned: ${memory.goals?.join(', ') || 'None yet'}
 - Preferred motivation style: ${memory.preferredStyle || 'Unknown'}
 
-Remember: Be personal, specific, and build on previous conversations. No generic responses.`;
+Remember: Be personal, specific, and build on previous conversations. Keep responses SHORT for voice chat (15-30 words max).`;
 
     const messages = [
       { role: "system", content: enhancedSystemPrompt },
@@ -148,12 +149,12 @@ Remember: Be personal, specific, and build on previous conversations. No generic
     ];
 
     const aiResponse = await openai.chat.completions.create({
-      model: "gpt-4-turbo", // Latest GPT-4-turbo for conversations
+      model: "gpt-4-turbo",
       messages,
-      max_tokens: 150,
+      max_tokens: 80, // REDUCED for shorter voice responses
       temperature: 0.7,
-      presence_penalty: 0.3, // Encourage diverse responses
-      frequency_penalty: 0.3 // Reduce repetition
+      presence_penalty: 0.3,
+      frequency_penalty: 0.3
     });
 
     const aiText = aiResponse.choices[0].message.content.trim();
@@ -170,32 +171,66 @@ Remember: Be personal, specific, and build on previous conversations. No generic
     // 5. GENERATE AI VOICE RESPONSE
     console.log("🎵 Generating AI voice...");
     
-    const audioPath = await generateVoiceAudioWebSocket(
-      aiText,
-      'characters',
-      aiPersonality.voiceId,
-      'confident'
-    );
-    // Convert to bytes for response (simplified for now)
-    const audioBytes = null; // Will implement audio serving later
+    try {
+      const audioPath = await generateVoiceAudioWebSocket(
+        aiText,
+        'characters',
+        aiPersonality.voiceId,
+        'confident'
+      );
 
-    // 6. CLEAN UP FILES
-    cleanupAudioFiles([audioFile.path, properFilePath]);
-
-    // 7. RETURN REAL-TIME RESPONSE
-    res.json({
-      success: true,
-      conversationId: conversationId || generateConversationId(),
-      userMessage,
-      aiResponse: aiText,
-      audioUrl: audioBytes ? `data:audio/mpeg;base64,${audioBytes.toString('base64')}` : null,
-      personality,
-      context: {
-        messageCount: context.messages.length + 2,
-        userPatterns: memory.recentPatterns,
-        memoryUpdated: true
+      // 6. SERVE AUDIO FILE
+      let audioUrl = null;
+      if (audioPath && fs.existsSync(audioPath)) {
+        // Read the audio file and convert to base64
+        const audioBuffer = fs.readFileSync(audioPath);
+        const audioBase64 = audioBuffer.toString('base64');
+        audioUrl = `data:audio/mpeg;base64,${audioBase64}`;
+        
+        // Clean up generated audio file
+        fs.unlinkSync(audioPath);
+        console.log("✅ Audio file processed and cleaned up");
       }
-    });
+
+      // 7. CLEAN UP UPLOAD FILES
+      cleanupAudioFiles([audioFile.path, properFilePath]);
+
+      // 8. RETURN CHATGPT-STYLE RESPONSE (VOICE ONLY)
+      res.json({
+        success: true,
+        conversationId: conversationId || generateConversationId(),
+        userMessage,
+        aiResponse: aiText,
+        audioUrl, // This will contain the actual audio data
+        personality,
+        voiceOnly: true, // Flag for ChatGPT-style voice chat
+        context: {
+          messageCount: context.messages.length + 2,
+          userPatterns: memory.recentPatterns,
+          memoryUpdated: true
+        }
+      });
+
+    } catch (voiceError) {
+      console.error("❌ Voice generation failed:", voiceError);
+      
+      // Return text-only response if voice fails
+      res.json({
+        success: true,
+        conversationId: conversationId || generateConversationId(),
+        userMessage,
+        aiResponse: aiText,
+        audioUrl: null,
+        personality,
+        voiceOnly: true,
+        error: "Voice generation failed, text response only",
+        context: {
+          messageCount: context.messages.length + 2,
+          userPatterns: memory.recentPatterns,
+          memoryUpdated: true
+        }
+      });
+    }
 
   } catch (error) {
     console.error("❌ Voice conversation error:", error);
@@ -223,7 +258,8 @@ function getUserMemory(userId) {
         responsePreferences: []
       },
       achievements: [],
-      personalContext: {}
+      personalContext: {},
+      recentPatterns: 'New user'
     });
   }
   return userMemories.get(userId);
@@ -259,6 +295,11 @@ function updateUserMemory(userId, userMessage, aiResponse, personality) {
       ...memory.patterns.motivationTriggers,
       ...patterns.triggers
     ])];
+  }
+  
+  // Update recent patterns summary
+  if (memory.conversationHistory.length > 3) {
+    memory.recentPatterns = 'Regular user with conversation history';
   }
   
   memory.lastUpdated = new Date();
@@ -347,41 +388,6 @@ function cleanupAudioFiles(filePaths) {
       fs.unlinkSync(path);
     }
   });
-}
-
-// 📊 MEMORY ANALYTICS ENDPOINT
-router.get('/user-memory/:userId', (req, res) => {
-  const { userId } = req.params;
-  const memory = getUserMemory(userId);
-  
-  res.json({
-    success: true,
-    memory: {
-      conversationCount: memory.conversationHistory.length,
-      goals: memory.goals,
-      patterns: memory.patterns,
-      lastUpdated: memory.lastUpdated,
-      personalInsights: generatePersonalInsights(memory)
-    }
-  });
-});
-
-function generatePersonalInsights(memory) {
-  const insights = [];
-  
-  if (memory.conversationHistory.length > 5) {
-    insights.push("User is actively engaging with motivation");
-  }
-  
-  if (memory.goals.length > 3) {
-    insights.push("User has multiple goals - might need prioritization help");
-  }
-  
-  if (memory.patterns.motivationTriggers.includes('stressed')) {
-    insights.push("User often mentions stress - focus on calming motivation");
-  }
-  
-  return insights;
 }
 
 export default router;
