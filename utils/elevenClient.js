@@ -54,6 +54,12 @@ const TONE_VOICE_SETTINGS = {
     style: 0.1,
     use_speaker_boost: true,
   },
+  'confident': {
+    stability: 0.75,
+    similarity_boost: 0.85,
+    style: 0.3,
+    use_speaker_boost: true,
+  },
   'Balanced': {
     stability: 0.6,
     similarity_boost: 0.85,
@@ -91,73 +97,81 @@ function getVoiceId(voiceCategory, voiceStyle) {
   return process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM';
 }
 
-// 🚀 WEBSOCKET TTS - THE CONCURRENCY BREAKTHROUGH!
-// This solves your 15 concurrent limit by only counting during generation
+// 🚀 FIXED WEBSOCKET TTS - FAST & RELIABLE!
 async function connectWebSocketTTS(voiceId, text, voiceSettings) {
   return new Promise((resolve, reject) => {
-    const startTime = Date.now();
+    console.log(`🔍 WebSocket URL: wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input`);
+    console.log(`🔍 API Key: [SECURED VIA RENDER ENV]`);
     
-    // Create WebSocket connection to ElevenLabs
-    // 🔍 DEBUG: Check WebSocket URL and headers
-    const websocketUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input`;
-    console.log("🔍 WebSocket URL:", websocketUrl);
-    console.log("🔍 API Key (first 10 chars):", process.env.ELEVENLABS_API_KEY?.substring(0, 10));
-
-    const ws = new WebSocket(websocketUrl, {
+    const ws = new WebSocket(`wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=eleven_turbo_v2`, {
       headers: {
-        'xi-api-key': process.env.ELEVENLABS_API_KEY,
+        "xi-api-key": process.env.ELEVENLABS_API_KEY,
       }
     });
 
     let audioChunks = [];
-    let generationStartTime = null;
     let hasReceivedAudio = false;
+    let generationStartTime = null;
+    let totalStartTime = Date.now();
 
     ws.on('open', () => {
       console.log("🔌 WebSocket connected to ElevenLabs");
       
-      // Send TTS request
-      const request = {
-      text: text,
-      voice_settings: voiceSettings,
-      xi_api_key: process.env.ELEVENLABS_API_KEY, // 🔑 CRITICAL: API key in message body
-      model_id: "eleven_monolingual_v1",
-    };
+      // 🚀 FIX: Send messages in proper ElevenLabs sequence
+      const messages = [
+        {
+          text: " ", // BOS (Beginning of Stream)
+          voice_settings: voiceSettings,
+          generation_config: {
+            chunk_length_schedule: [120, 160, 250, 290]
+          }
+        },
+        { text: text }, // Actual text content
+        { text: "" }    // EOS (End of Stream)
+      ];
       
-      ws.send(JSON.stringify(request));
+      // Send messages with proper timing
+      messages.forEach((msg, index) => {
+        setTimeout(() => {
+          ws.send(JSON.stringify(msg));
+          if (index === 1) generationStartTime = Date.now();
+        }, index * 10); // 10ms between messages
+      });
     });
 
     ws.on('message', (data) => {
       try {
-        // Check if it's JSON (status message) or binary (audio)
-        if (data[0] === 0x7B) { // JSON starts with '{'
-          const message = JSON.parse(data.toString());
-          
-          if (message.type === 'generation_started') {
-            generationStartTime = Date.now();
-            console.log("🎵 Audio generation started - NOW counting toward concurrency");
-          } else if (message.type === 'generation_ended') {
-            const generationTime = (Date.now() - generationStartTime) / 1000;
-            console.log(`🎯 Generation ended - concurrency freed after ${generationTime}s`);
-          } else if (message.error) {
-            reject(new Error(`ElevenLabs WebSocket error: ${message.error}`));
-            return;
+        const response = JSON.parse(data);
+        
+        if (response.audio) {
+          if (!hasReceivedAudio) {
+            hasReceivedAudio = true;
+            console.log("🎵 First audio chunk received - WebSocket SUCCESS!");
           }
-        } else {
-          // Binary audio data
-          audioChunks.push(data);
-          hasReceivedAudio = true;
+          
+          const audioChunk = Buffer.from(response.audio, 'base64');
+          audioChunks.push(audioChunk);
         }
+        
+        if (response.isFinal) {
+          console.log("🎯 Generation complete, closing WebSocket");
+          ws.close();
+        }
+        
+        if (response.error) {
+          reject(new Error(`ElevenLabs WebSocket error: ${response.error}`));
+          return;
+        }
+        
       } catch (parseError) {
-        // Assume it's binary audio data if JSON parsing fails
-        audioChunks.push(data);
-        hasReceivedAudio = true;
+        console.error("❌ Failed to parse WebSocket message:", parseError);
       }
     });
 
     ws.on('close', () => {
-      const totalTime = (Date.now() - startTime) / 1000;
-      const actualGenerationTime = generationStartTime ? (Date.now() - generationStartTime) / 1000 : totalTime;
+      const totalTime = (Date.now() - totalStartTime) / 1000;
+      const actualGenerationTime = generationStartTime ? 
+        (Date.now() - generationStartTime) / 1000 : totalTime;
       
       console.log(`📊 WebSocket closed. Total time: ${totalTime}s, Generation time: ${actualGenerationTime}s`);
       console.log(`🚀 Concurrency efficiency: ${((totalTime - actualGenerationTime) / totalTime * 100).toFixed(1)}% saved!`);
@@ -176,13 +190,14 @@ async function connectWebSocketTTS(voiceId, text, voiceSettings) {
       reject(error);
     });
 
-    // Timeout after 30 seconds
+    // 🚀 FIX: Shorter timeout for faster failure detection
     setTimeout(() => {
       if (ws.readyState === WebSocket.OPEN) {
+        console.log("⏰ WebSocket taking too long - closing");
         ws.close();
-        reject(new Error('WebSocket timeout after 30 seconds'));
+        reject(new Error('input_timeout_exceeded'));
       }
-    }, 30000);
+    }, 10000); // Reduced from 30s to 10s
   });
 }
 
