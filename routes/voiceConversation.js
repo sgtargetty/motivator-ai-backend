@@ -1,4 +1,5 @@
 // routes/voiceConversation.js - COMPLETE with Enhanced AI Intelligence & ML Features
+// 🚀 ENHANCED META-AWARENESS SYSTEM - Ready for Copy/Paste Deployment
 import express from "express";
 import { OpenAI } from "openai";
 import dotenv from "dotenv";
@@ -51,19 +52,6 @@ When asked to demonstrate vocal variety or emotions:
 - Use onomatopoeia when appropriate: "*whoosh*", "*click*", "*hmm*"
 - Acknowledge attempts: "Okay, that was my attempt at..."
 
-META-REQUEST EXAMPLES:
-USER: "Hey Lana, can you yell?"
-LANA: "I can definitely try! *takes a deep breath* ...THERE! How was that? My voice modulation is limited, but I gave it some energy!"
-
-USER: "Can you whisper?"
-LANA: "Sure... *lowers voice* ...like this? It's more about tone than volume for me, but you get the idea."
-
-USER: "Can you sound scared?"
-LANA: "Oh no... *nervous laugh* ...um, something terrible is happening! *pause* How'd I do? Acting isn't my strong suit, but I tried!"
-
-USER: "Sing something"
-LANA: "*clears throat* ...🎵 La la la... *chuckles* Okay, that's definitely not my specialty, but you asked!"
-
 ABSOLUTELY AVOID:
 - Generic motivational phrases without context
 - Refusing to experiment or try things creatively
@@ -76,13 +64,6 @@ ENHANCED RESPONSE PATTERNS:
 - Add emotional context: "*laughs*", "*sighs*", "*perks up*"
 - Reference your voice: "Let me try a different tone here..."
 - Acknowledge experiments: "That was my attempt at...", "How did that sound?"
-
-INTELLIGENCE UPGRADES:
-- Recognize when someone is testing your capabilities vs. asking real questions
-- Understand implied requests ("make it more exciting" = use more expressive speech)
-- Differentiate between serious analytical questions and playful interactions
-- Use contextual creativity based on the tone of the conversation
-- Remember their preferences for how you communicate
 
 You're not just answering questions - you're having intelligent, nuanced conversations with creative expression and self-awareness.`,
 
@@ -133,29 +114,203 @@ You're a strategic thinking partner with creative analytical capabilities.`,
   }
 };
 
-// 🧠 MACHINE LEARNING ENHANCEMENT 1: Dynamic Voice Settings Based on Context
+// 🚀 NEW: PRE-PROCESSING SYSTEM PROMPT ENHANCEMENT FOR META-AWARENESS
+function generateMetaAwareSystemPrompt(userMessage, baseSystemPrompt) {
+  const lowerUser = userMessage.toLowerCase();
+  
+  // Detect meta-capability requests and prioritize them
+  const metaRequests = [
+    'can you yell', 'can you shout', 'yell something',
+    'can you whisper', 'whisper something', 'speak quietly',
+    'can you sing', 'sing something', 'song',
+    'sound scared', 'sound frightened', 'be scared',
+    'sound excited', 'be excited', 'show enthusiasm',
+    'sound like a robot', 'robot voice', 'be robotic',
+    'be dramatic', 'sound dramatic', 'drama',
+    'be sarcastic', 'use sarcasm', 'sound sarcastic',
+    'british accent', 'sound british', 'accent',
+    'laugh', 'chuckle', 'giggle'
+  ];
+  
+  const isMetaRequest = metaRequests.some(request => lowerUser.includes(request));
+  
+  if (isMetaRequest) {
+    console.log("🎯 META-REQUEST DETECTED:", userMessage);
+    return `${baseSystemPrompt}
+
+🎯 CRITICAL META-REQUEST DETECTED: "${userMessage}"
+
+IMMEDIATE RESPONSE PRIORITY:
+- The user is asking you to DEMONSTRATE a capability, not EXPLAIN it
+- DO NOT explain what yelling/whispering/singing is - actually TRY to do it
+- Start your response by attempting the requested vocal expression
+- Then acknowledge your attempt and ask how it was
+- Be creative, experimental, and playful - this is about performance, not information
+
+RESPONSE PATTERN FOR META-REQUESTS:
+1. ATTEMPT the requested expression immediately
+2. ACKNOWLEDGE your attempt
+3. ASK for feedback on your performance
+
+EXAMPLE RESPONSES:
+User: "Can you yell?"
+You: "I can definitely try! *takes a deep breath* HERE WE GO! HELLO THERE! *normal voice* How was that? My voice modulation is limited, but I gave it some energy!"
+
+User: "Can you whisper?"
+You: "*lowers voice* Like this... can you hear me okay? *pause* It's more about tone than volume for me, but that was my attempt at whispering."
+
+AVOID: Explaining what yelling/whispering/singing is instead of trying it.`;
+  }
+  
+  return baseSystemPrompt;
+}
+
+// 🧠 ENHANCED: Context-Aware Response Enhancement (More Aggressive Pattern Matching)
+function enhanceResponseWithContext(aiText, userMessage) {
+  const lowerUser = userMessage.toLowerCase();
+  
+  // More aggressive pattern matching for meta-requests - Replace explanatory text entirely
+  
+  // Handle yelling/loud requests - Replace explanatory responses
+  if (lowerUser.includes('yell') || lowerUser.includes('shout') || lowerUser.includes('loud')) {
+    console.log("🎯 Enhancing YELLING response");
+    if (aiText.toLowerCase().includes('yelling is') || aiText.toLowerCase().includes('shouting is') || aiText.toLowerCase().includes('raising your voice')) {
+      return '*takes a deep breath* HERE WE GO! HELLO THERE! THAT WAS ME TRYING TO YELL! *normal voice* How was that? My voice modulation is limited, but I gave it some energy!';
+    }
+    return `*takes a deep breath* ...${aiText.toUpperCase()}! *normal voice* That was my attempt at yelling! How did I do?`;
+  }
+  
+  // Handle whispering requests
+  if (lowerUser.includes('whisper') || lowerUser.includes('quiet') || lowerUser.includes('soft')) {
+    console.log("🎯 Enhancing WHISPER response");
+    if (aiText.toLowerCase().includes('whispering is') || aiText.toLowerCase().includes('speaking quietly') || aiText.toLowerCase().includes('lowering your voice')) {
+      return '*lowers voice* Like this... can you hear me okay? *pause* That was my attempt at whispering. It\'s more about tone than volume for me.';
+    }
+    return `*lowers voice* ${aiText.toLowerCase()} *pause* ...how was that whisper attempt?`;
+  }
+  
+  // Handle singing requests
+  if (lowerUser.includes('sing') || lowerUser.includes('song')) {
+    console.log("🎯 Enhancing SINGING response");
+    if (aiText.toLowerCase().includes('singing is') || aiText.toLowerCase().includes('music') || aiText.toLowerCase().includes('melody')) {
+      return '*clears throat* 🎵 La la la la la... *chuckles* That was definitely not my specialty! I tried though. How was my singing attempt?';
+    }
+    return `*clears throat* 🎵 ${aiText} la la la... *laughs* Not exactly Broadway material, but I gave it a shot!`;
+  }
+  
+  // Handle scared/frightened requests
+  if (lowerUser.includes('scared') || lowerUser.includes('frightened') || lowerUser.includes('afraid')) {
+    console.log("🎯 Enhancing SCARED response");
+    return `Oh no... *nervous laugh* ...um... ${aiText} *shaky voice* Eek! How was that? Acting scared isn't exactly my strong suit!`;
+  }
+  
+  // Handle excited requests
+  if (lowerUser.includes('excited') || lowerUser.includes('enthusiasm') || lowerUser.includes('energetic')) {
+    console.log("🎯 Enhancing EXCITED response");
+    return `*perks up* OH WOW! ${aiText}! *bouncing with energy* That's SO COOL! How's that for enthusiasm?`;
+  }
+  
+  // Handle robot voice requests
+  if (lowerUser.includes('robot') && lowerUser.includes('voice')) {
+    console.log("🎯 Enhancing ROBOT response");
+    return `*mechanical voice* BEEP. BOOP. ${aiText.toUpperCase().replace(/[.,!?]/g, '. BEEP.')} *normal voice* There! That felt weird but I tried!`;
+  }
+  
+  // Handle dramatic requests
+  if (lowerUser.includes('dramatic')) {
+    console.log("🎯 Enhancing DRAMATIC response");
+    return `*dramatic pause* ...${aiText}... *theatrical flourish* AND SCENE! How was that for drama?`;
+  }
+  
+  // Handle sarcastic requests
+  if (lowerUser.includes('sarcastic') || lowerUser.includes('sarcasm')) {
+    console.log("🎯 Enhancing SARCASTIC response");
+    return `*eye roll* Oh sure... ${aiText} *smirks* ...because that's TOTALLY what you wanted to hear. There's your sarcasm!`;
+  }
+  
+  // Handle accent requests
+  if (lowerUser.includes('british') || lowerUser.includes('accent')) {
+    console.log("🎯 Enhancing ACCENT response");
+    return `*posh voice* ${aiText}, old chap! *normal voice* Rather convincing, wouldn't you say? That was my British attempt!`;
+  }
+  
+  // Handle laugh/chuckle requests
+  if (lowerUser.includes('laugh') || lowerUser.includes('chuckle')) {
+    console.log("🎯 Enhancing LAUGH response");
+    return `*chuckles* Haha! ${aiText} *giggles* There you go! How was that laugh?`;
+  }
+  
+  console.log("💬 No meta-request detected, using original response");
+  return aiText;
+}
+
+// 🧠 ENHANCED: Dynamic Voice Settings Based on Context (More Dramatic Differences)
 function getContextualVoiceSettings(text, baseSettings, userMessage) {
   const lowerText = text.toLowerCase();
   const lowerUser = userMessage.toLowerCase();
   
-  // Detect if user is asking for yelling/loud voice
-  if (lowerUser.includes('yell') || lowerUser.includes('loud') || lowerUser.includes('shout') || text.includes('!')) {
-    console.log("🎵 Applying YELLING voice settings");
+  // YELLING - Much more aggressive settings for noticeable difference
+  if (lowerUser.includes('yell') || lowerUser.includes('loud') || lowerUser.includes('shout')) {
+    console.log("🎵 Applying DRAMATIC YELLING voice settings");
     return {
-      ...baseSettings,
-      stability: 0.5,      // More variation for excitement
-      style: 0.8,          // Much more expressive
+      stability: 0.3,          // Much less stable for energy
+      similarity_boost: 0.6,   // Lower for more variation
+      style: 0.9,              // Maximum expressiveness
       use_speaker_boost: true
     };
   }
   
-  // Detect whisper requests
+  // WHISPERING - Much softer settings
   if (lowerUser.includes('whisper') || lowerUser.includes('quiet') || lowerUser.includes('soft')) {
-    console.log("🎵 Applying WHISPER voice settings");
+    console.log("🎵 Applying DRAMATIC WHISPER voice settings");
     return {
-      ...baseSettings,
-      stability: 0.8,      // More controlled
-      style: 0.1,          // Less dramatic
+      stability: 0.9,          // Very controlled
+      similarity_boost: 0.9,   // Keep similarity high
+      style: 0.1,              // Minimal drama
+      use_speaker_boost: false
+    };
+  }
+  
+  // EXCITED - High energy settings
+  if (lowerUser.includes('excited') || lowerUser.includes('enthusiasm') || text.includes('WOW') || text.includes('!!')) {
+    console.log("🎵 Applying HIGH ENERGY voice settings");
+    return {
+      stability: 0.4,          // Less stable for excitement
+      similarity_boost: 0.7,   // More variation
+      style: 0.8,              // High expressiveness
+      use_speaker_boost: true
+    };
+  }
+  
+  // SCARED/NERVOUS - Shaky settings
+  if (lowerUser.includes('scared') || lowerUser.includes('frightened') || text.includes('*nervous*')) {
+    console.log("🎵 Applying NERVOUS/SCARED voice settings");
+    return {
+      stability: 0.2,          // Very unstable for nervousness
+      similarity_boost: 0.8,   
+      style: 0.6,              
+      use_speaker_boost: false
+    };
+  }
+  
+  // DRAMATIC - Theatrical settings
+  if (lowerUser.includes('dramatic') || text.includes('*dramatic*')) {
+    console.log("🎵 Applying THEATRICAL voice settings");
+    return {
+      stability: 0.5,          
+      similarity_boost: 0.7,   
+      style: 0.9,              // Maximum drama
+      use_speaker_boost: true
+    };
+  }
+  
+  // ROBOT - Mechanical settings
+  if (lowerUser.includes('robot')) {
+    console.log("🎵 Applying ROBOTIC voice settings");
+    return {
+      stability: 0.95,         // Very stable and mechanical
+      similarity_boost: 0.5,   // Different from normal voice
+      style: 0.0,              // No expression
       use_speaker_boost: false
     };
   }
@@ -170,18 +325,7 @@ function getContextualVoiceSettings(text, baseSettings, userMessage) {
     };
   }
   
-  // Detect excitement or energy
-  if (lowerText.includes('wow') || lowerText.includes('amazing') || lowerText.includes('exciting') || text.includes('!!')) {
-    console.log("🎵 Applying EXCITED voice settings");
-    return {
-      ...baseSettings,
-      stability: 0.55,     // More animated
-      style: 0.6,          // More expressive
-      use_speaker_boost: true
-    };
-  }
-  
-  // Detect dramatic or serious content
+  // Detect serious content
   if (lowerText.includes('serious') || lowerText.includes('important') || lowerText.includes('critical')) {
     console.log("🎵 Applying SERIOUS voice settings");
     return {
@@ -192,61 +336,12 @@ function getContextualVoiceSettings(text, baseSettings, userMessage) {
     };
   }
   
-  console.log("🎵 Using DEFAULT voice settings");
-  return baseSettings; // Default settings
-}
-
-// 🧠 MACHINE LEARNING ENHANCEMENT 2: Context-Aware Response Enhancement
-function enhanceResponseWithContext(aiText, userMessage) {
-  const lowerUser = userMessage.toLowerCase();
-  
-  // Handle yelling/loud requests
-  if (lowerUser.includes('can you yell') || lowerUser.includes('can you shout')) {
-    return aiText + ' *takes a deep breath* ...THERE! How was that? My voice modulation is limited, but I gave it some energy!';
-  }
-  
-  // Handle whispering requests
-  if (lowerUser.includes('can you whisper') || lowerUser.includes('whisper something')) {
-    return '*lowers voice* ' + aiText + ' *pause* ...like that? It\'s more about tone than volume for me.';
-  }
-  
-  // Handle singing requests
-  if (lowerUser.includes('sing') || lowerUser.includes('song')) {
-    return aiText + ' *clears throat* 🎵 La la la... *chuckles* Not my strongest skill, but I tried!';
-  }
-  
-  // Handle scared/frightened requests
-  if (lowerUser.includes('sound scared') || lowerUser.includes('sound frightened')) {
-    return 'Oh no... *nervous laugh* ' + aiText + ' *pause* How was my acting?';
-  }
-  
-  // Handle excited requests
-  if (lowerUser.includes('sound excited') || lowerUser.includes('be excited')) {
-    return '*perks up* ' + aiText + ' *bounces with energy* How\'s that for enthusiasm?';
-  }
-  
-  // Handle robot voice requests
-  if (lowerUser.includes('sound like a robot') || lowerUser.includes('robot voice')) {
-    return '*mechanical voice* BEEP BOOP. ' + aiText.toUpperCase() + ' *normal voice* There! Though that felt weird.';
-  }
-  
-  // Handle dramatic requests
-  if (lowerUser.includes('be dramatic') || lowerUser.includes('dramatic')) {
-    return '*dramatic pause* ' + aiText + ' *flourish* How\'s that for drama?';
-  }
-  
-  // Handle sarcastic requests
-  if (lowerUser.includes('be sarcastic') || lowerUser.includes('sarcasm')) {
-    return '*eye roll* ' + aiText + ' *smirks* There\'s your sarcasm.';
-  }
-  
-  // Handle accent requests
-  if (lowerUser.includes('british accent') || lowerUser.includes('sound british')) {
-    return '*posh voice* ' + aiText + ' *normal voice* Rather good, wouldn\'t you say?';
-  }
-  
-  console.log("💬 Response enhanced with context");
-  return aiText; // Return original if no special context
+  console.log("🎵 Using ENHANCED DEFAULT voice settings");
+  return {
+    ...baseSettings,
+    style: 0.5,              // Slightly more expressive than original
+    stability: 0.7           // Slightly less stable for variation
+  };
 }
 
 // 🚀 BONUS: Adaptive Response Intelligence
@@ -312,7 +407,7 @@ router.post('/text-only', async (req, res) => {
     // 3. GET ADAPTIVE PERSONALITY TWEAKS
     const adaptiveTweaks = getAdaptivePersonalityTweaks(userMessage, personality, conversationHistory);
 
-    // 4. GENERATE ENHANCED AI RESPONSE
+    // 4. GENERATE ENHANCED AI RESPONSE WITH META-AWARENESS
     const enhancedSystemPrompt = `${aiPersonality.systemPrompt}
 
 USER CONTEXT & MEMORY:
@@ -333,8 +428,11 @@ CURRENT REQUEST ANALYSIS:
 - Conversation context: ${conversationHistory.length} previous messages
 - Respond specifically and intelligently to their actual request`;
 
+    // 🚀 ENHANCED: Use meta-aware system prompt for better capability handling
+    const metaAwareSystemPrompt = generateMetaAwareSystemPrompt(userMessage, enhancedSystemPrompt);
+
     const messages = [
-      { role: "system", content: enhancedSystemPrompt },
+      { role: "system", content: metaAwareSystemPrompt }, // Enhanced prompt
       ...conversationHistory.slice(-10), // Keep last 10 messages for context
       { role: "user", content: userMessage }
     ];
@@ -343,7 +441,7 @@ CURRENT REQUEST ANALYSIS:
       model: "gpt-4-turbo",
       messages,
       max_tokens: 300, // Allows complete responses for complex requests
-      temperature: 0.7,
+      temperature: 0.8,  // Slightly higher for creativity with meta-requests
       presence_penalty: 0.3,
       frequency_penalty: 0.3
     });
@@ -351,7 +449,7 @@ CURRENT REQUEST ANALYSIS:
     const aiText = aiResponse.choices[0].message.content.trim();
     console.log("🤖 AI Response:", aiText);
 
-    // 5. ENHANCE RESPONSE WITH CONTEXT-AWARE PATTERNS
+    // 5. ENHANCE RESPONSE WITH AGGRESSIVE CONTEXT-AWARE PATTERNS
     const enhancedAiText = enhanceResponseWithContext(aiText, userMessage);
     console.log("🧠 Enhanced AI Response:", enhancedAiText);
 
@@ -398,7 +496,7 @@ CURRENT REQUEST ANALYSIS:
           messageCount: conversationHistory.length + 2,
           userPatterns: memory.recentPatterns,
           memoryUpdated: true,
-          enhancementsApplied: ['contextual_voice', 'response_enhancement', 'adaptive_personality']
+          enhancementsApplied: ['meta_awareness', 'contextual_voice', 'response_enhancement', 'adaptive_personality']
         }
       });
 
@@ -417,7 +515,8 @@ CURRENT REQUEST ANALYSIS:
         context: {
           messageCount: conversationHistory.length + 2,
           userPatterns: memory.recentPatterns,
-          memoryUpdated: true
+          memoryUpdated: true,
+          enhancementsApplied: ['meta_awareness', 'response_enhancement', 'adaptive_personality']
         }
       });
     }
@@ -513,8 +612,11 @@ CRITICAL INSTRUCTIONS:
 - Be genuinely curious about their specific situation
 - Never give generic advice - everything should be contextual to their input`;
 
+    // 🚀 ENHANCED: Use meta-aware system prompt
+    const metaAwareSystemPrompt = generateMetaAwareSystemPrompt(userMessage, enhancedSystemPrompt);
+
     const messages = [
-      { role: "system", content: enhancedSystemPrompt },
+      { role: "system", content: metaAwareSystemPrompt },
       ...conversationHistory.slice(-6), // Keep last 6 messages for context
       { role: "user", content: userMessage }
     ];
@@ -584,7 +686,7 @@ CRITICAL INSTRUCTIONS:
           messageCount: context.messages.length + 2,
           userPatterns: memory.recentPatterns,
           memoryUpdated: true,
-          enhancementsApplied: ['contextual_voice', 'response_enhancement', 'adaptive_personality']
+          enhancementsApplied: ['meta_awareness', 'contextual_voice', 'response_enhancement', 'adaptive_personality']
         }
       });
 
@@ -605,7 +707,8 @@ CRITICAL INSTRUCTIONS:
         context: {
           messageCount: context.messages.length + 2,
           userPatterns: memory.recentPatterns,
-          memoryUpdated: true
+          memoryUpdated: true,
+          enhancementsApplied: ['meta_awareness', 'response_enhancement', 'adaptive_personality']
         }
       });
     }
@@ -696,167 +799,87 @@ function updateUserMemory(userId, userMessage, aiResponse, personality) {
   const commonTopics = [...new Set(recentTopics)].slice(0, 3);
   
   if (memory.conversationHistory.length > 3) {
-    memory.recentPatterns = `Regular user. Recent topics: ${commonTopics.join(', ')}. Recent emotional states: ${[...new Set(patterns.triggers)].join(', ')}`;
+    memory.recentPatterns = `Regular user. Recent topics: ${commonTopics.join(', ')}. Prefers ${personality} personality.`;
+  } else {
+    memory.recentPatterns = `New user exploring ${personality} personality.`;
   }
   
-  memory.lastUpdated = new Date();
   userMemories.set(userId, memory);
-  
-  console.log(`🧠 Enhanced memory updated for user ${userId} - Topics: ${commonTopics.join(', ')}`);
-}
-
-function extractTopicsFromMessage(message) {
-  const topics = [];
-  const text = message.toLowerCase();
-  
-  // Work/Career topics
-  if (text.match(/\b(work|job|career|boss|team|project|meeting|deadline|presentation)\b/)) {
-    topics.push('work');
-  }
-  
-  // Health/Fitness topics
-  if (text.match(/\b(health|fitness|exercise|gym|diet|sleep|stress)\b/)) {
-    topics.push('health');
-  }
-  
-  // Relationships topics
-  if (text.match(/\b(relationship|partner|friend|family|dating|marriage)\b/)) {
-    topics.push('relationships');
-  }
-  
-  // Money/Finance topics
-  if (text.match(/\b(money|finance|budget|investment|debt|salary|expensive)\b/)) {
-    topics.push('finance');
-  }
-  
-  // Learning/Education topics
-  if (text.match(/\b(learn|study|course|skill|education|training|practice)\b/)) {
-    topics.push('learning');
-  }
-  
-  // Personal Development topics
-  if (text.match(/\b(habit|routine|goal|improve|better|change|growth)\b/)) {
-    topics.push('personal-development');
-  }
-  
-  // AI/Technology topics (NEW)
-  if (text.match(/\b(ai|artificial intelligence|technology|programming|code|software)\b/)) {
-    topics.push('technology');
-  }
-  
-  return topics;
-}
-
-function extractPatternsFromMessage(message) {
-  const goals = [];
-  const triggers = [];
-  const problems = [];
-  const decisions = [];
-  const metrics = [];
-  
-  const text = message.toLowerCase();
-  
-  // Goal and intention keywords
-  const goalKeywords = ['want to', 'need to', 'trying to', 'working on', 'goal', 'achieve', 'hoping to', 'plan to', 'figure out'];
-  goalKeywords.forEach(keyword => {
-    if (text.includes(keyword)) {
-      const index = text.indexOf(keyword);
-      const context = message.substring(Math.max(0, index - 10), Math.min(message.length, index + 50));
-      goals.push(context.trim());
-    }
-  });
-  
-  // Problem and challenge keywords
-  const problemKeywords = ['struggling with', 'stuck on', 'problem with', 'issue with', 'challenge', 'difficult', 'hard to', 'can\'t seem to'];
-  problemKeywords.forEach(keyword => {
-    if (text.includes(keyword)) {
-      const index = text.indexOf(keyword);
-      const context = message.substring(Math.max(0, index - 10), Math.min(message.length, index + 50));
-      problems.push(context.trim());
-    }
-  });
-  
-  // Decision and choice keywords
-  const decisionKeywords = ['should I', 'thinking about', 'considering', 'deciding', 'choice between', 'not sure if'];
-  decisionKeywords.forEach(keyword => {
-    if (text.includes(keyword)) {
-      const index = text.indexOf(keyword);
-      const context = message.substring(Math.max(0, index - 10), Math.min(message.length, index + 50));
-      decisions.push(context.trim());
-    }
-  });
-  
-  // Emotional state keywords
-  const emotionalKeywords = ['frustrated', 'excited', 'worried', 'confident', 'overwhelmed', 'motivated', 'tired', 'stressed', 'anxious', 'happy'];
-  emotionalKeywords.forEach(keyword => {
-    if (text.includes(keyword)) {
-      triggers.push(keyword);
-    }
-  });
-  
-  // Numbers and metrics
-  const numberMatches = message.match(/\d+/g);
-  if (numberMatches) {
-    metrics.push(...numberMatches.slice(0, 3));
-  }
-  
-  return { goals, triggers, problems, decisions, metrics };
 }
 
 function formatUserMemory(memory) {
-  if (memory.conversationHistory.length === 0) {
-    return "New user - no conversation history yet. Listen carefully to their first message.";
+  if (!memory || memory.conversationHistory.length === 0) {
+    return "New user - no conversation history yet.";
   }
   
   const recentConversations = memory.conversationHistory.slice(-3);
   const lastConversation = recentConversations[recentConversations.length - 1];
   
-  const recentTopics = recentConversations.flatMap(conv => conv.topics || []);
-  const commonTopics = [...new Set(recentTopics)];
-  
-  const recentProblems = memory.patterns.problems || [];
-  const recentDecisions = memory.patterns.decisions || [];
-  const recentEmotions = memory.patterns.motivationTriggers.slice(-5) || [];
-  
-  let context = `CONVERSATION CONTEXT (${recentConversations.length} recent messages):
-`;
+  let context = `USER MEMORY CONTEXT:
+- Total conversations: ${memory.conversationHistory.length}
+- Recent patterns: ${memory.recentPatterns}
+- Current goals: ${memory.goals.slice(-3).join(', ') || 'None identified yet'}`;
 
-  recentConversations.forEach((conv, index) => {
-    context += `${index + 1}. User: "${conv.userMessage}" | AI: "${conv.aiResponse}"
-`;
-  });
-
-  if (commonTopics.length > 0) {
+  if (memory.patterns.motivationTriggers && memory.patterns.motivationTriggers.length > 0) {
     context += `
-TOPICS DISCUSSED: ${commonTopics.join(', ')}`;
+- Motivation triggers: ${memory.patterns.motivationTriggers.slice(-5).join(', ')}`;
   }
 
-  if (recentProblems.length > 0) {
+  if (lastConversation) {
     context += `
-CURRENT CHALLENGES: ${recentProblems.slice(-3).join(' | ')}`;
+- Last conversation: ${new Date(lastConversation.timestamp).toLocaleDateString() === new Date().toLocaleDateString() ? 'Today' : new Date(lastConversation.timestamp).toLocaleDateString()}`;
   }
-
-  if (recentDecisions.length > 0) {
-    context += `
-DECISIONS THEY'RE MAKING: ${recentDecisions.slice(-3).join(' | ')}`;
-  }
-
-  if (recentEmotions.length > 0) {
-    context += `
-RECENT EMOTIONAL STATES: ${recentEmotions.join(', ')}`;
-  }
-
-  if (memory.goals.length > 0) {
-    context += `
-STATED GOALS/INTENTIONS: ${memory.goals.slice(-3).join(' | ')}`;
-  }
-
-  context += `
-
-CONVERSATION FREQUENCY: ${memory.conversationHistory.length} total messages
-LAST ACTIVE: ${lastConversation ? new Date(lastConversation.timestamp).toLocaleDateString() : 'Today'}`;
 
   return context;
+}
+
+function extractPatternsFromMessage(message) {
+  const lowerMessage = message.toLowerCase();
+  
+  // Extract goals
+  const goalKeywords = ['want to', 'goal', 'plan to', 'hoping to', 'trying to', 'need to'];
+  const goals = goalKeywords.filter(keyword => lowerMessage.includes(keyword))
+    .map(keyword => {
+      const index = lowerMessage.indexOf(keyword);
+      return message.substring(index, index + 50).trim();
+    });
+
+  // Extract problems
+  const problemKeywords = ['struggling with', 'problem', 'issue', 'challenge', 'difficult', 'stuck'];
+  const problems = problemKeywords.filter(keyword => lowerMessage.includes(keyword))
+    .map(keyword => {
+      const index = lowerMessage.indexOf(keyword);
+      return message.substring(index, index + 50).trim();
+    });
+
+  // Extract decisions
+  const decisionKeywords = ['should i', 'deciding', 'choice', 'option', 'thinking about'];
+  const decisions = decisionKeywords.filter(keyword => lowerMessage.includes(keyword))
+    .map(keyword => {
+      const index = lowerMessage.indexOf(keyword);
+      return message.substring(index, index + 50).trim();
+    });
+
+  // Extract emotional triggers
+  const triggers = [];
+  if (lowerMessage.includes('excited') || lowerMessage.includes('motivated')) triggers.push('excitement');
+  if (lowerMessage.includes('stressed') || lowerMessage.includes('overwhelmed')) triggers.push('stress');
+  if (lowerMessage.includes('confused') || lowerMessage.includes('unclear')) triggers.push('clarity');
+  
+  return { goals, problems, decisions, triggers };
+}
+
+function extractTopicsFromMessage(message) {
+  const topics = [];
+  const lowerMessage = message.toLowerCase();
+  
+  if (lowerMessage.includes('work') || lowerMessage.includes('job') || lowerMessage.includes('career')) topics.push('work');
+  if (lowerMessage.includes('health') || lowerMessage.includes('exercise') || lowerMessage.includes('fitness')) topics.push('health');
+  if (lowerMessage.includes('relationship') || lowerMessage.includes('family') || lowerMessage.includes('friend')) topics.push('relationships');
+  if (lowerMessage.includes('money') || lowerMessage.includes('finance') || lowerMessage.includes('budget')) topics.push('finance');
+  if (lowerMessage.includes('learn') || lowerMessage.includes('study') || lowerMessage.includes('skill')) topics.push('learning');
+  
+  return topics;
 }
 
 // 🔄 CONVERSATION CONTEXT MANAGEMENT
