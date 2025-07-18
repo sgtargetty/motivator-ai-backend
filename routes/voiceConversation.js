@@ -157,7 +157,12 @@ router.post('/text-only', async (req, res) => {
 USER CONTEXT & MEMORY:
 ${memoryContext}
 
-Keep responses SHORT for voice chat (15-30 words max).`;
+VOICE RESPONSE GUIDELINES:
+- Simple questions: 15-30 words ("How are you?" → brief, casual response)
+- Complex questions: Complete but conversational responses  
+- Factual requests: Provide full information requested (like recitations, explanations)
+- Stories/detailed topics: Give complete content but keep it engaging
+- Always match response length to what they're actually asking for`;
 
     const messages = [
       { role: "system", content: enhancedSystemPrompt },
@@ -168,7 +173,7 @@ Keep responses SHORT for voice chat (15-30 words max).`;
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       messages,
-      max_tokens: 80, // REDUCED for shorter voice responses
+      max_tokens: 300, // INCREASED - allows complete responses for complex requests
       temperature: 0.7,
       presence_penalty: 0.3,
       frequency_penalty: 0.3
@@ -334,7 +339,7 @@ CRITICAL INSTRUCTIONS:
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       messages,
-      max_tokens: 100, // Increased slightly for more thoughtful responses
+      max_tokens: 300, // Increased slightly for more thoughtful responses
       temperature: 0.8, // Increased for more creative, less formulaic responses
       presence_penalty: 0.6, // Increased to discourage repetitive patterns
       frequency_penalty: 0.4
