@@ -186,10 +186,10 @@ Keep responses SHORT for voice chat (15-30 words max).`;
     try {
       const audioPath = await generateVoiceAudioWebSocket(
         aiText,
-        'characters',
-        aiPersonality.voiceId,
+        'characters', 
+        personality,  // <-- FIX: Use "Lana Croft" instead
         'confident'
-      );
+        );
 
       // 6. SERVE AUDIO FILE
       let audioUrl = null;
