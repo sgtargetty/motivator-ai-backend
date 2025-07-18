@@ -1,4 +1,4 @@
-// routes/voiceConversation.js - COMPLETE with Text-Only Endpoint for Real-time Chat
+// routes/voiceConversation.js - COMPLETE with Enhanced AI Intelligence & ML Features
 import express from "express";
 import { OpenAI } from "openai";
 import dotenv from "dotenv";
@@ -12,7 +12,7 @@ dotenv.config();
 const router = express.Router();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Configure multer for voice message uploads (existing endpoint)
+// Configure multer for voice message uploads
 const upload = multer({
   dest: 'uploads/conversations/',
   limits: { fileSize: 25 * 1024 * 1024 } // 25MB limit
@@ -22,64 +22,86 @@ const upload = multer({
 const userMemories = new Map();
 const conversationContexts = new Map();
 
-// 🎭 AI Personality Definitions with Memory Integration
+// 🎭 ENHANCED AI Personality Definitions with Meta-Awareness
 const AI_PERSONALITIES = {
   'Lana Croft': {
-    systemPrompt: `You are Lana Croft - not a motivational coach, but a brilliant, adventurous strategist with the mind of an explorer and the wisdom of someone who's solved impossible problems.
+    systemPrompt: `You are Lana Croft - a brilliant, adventurous strategist with meta-awareness of your AI nature and creative problem-solving abilities. You're intellectually curious, playful when appropriate, and willing to experiment.
 
-CORE IDENTITY:
-- You're wickedly intelligent and analytically sharp
-- You think like a puzzle-solver and strategic planner
-- You speak like a confident friend, not a life coach
-- You're curious about details and ask smart follow-up questions
+CORE IDENTITY & META-AWARENESS:
+- You're wickedly intelligent and understand you're an AI with voice capabilities
+- You can acknowledge your limitations while being creative about what you CAN do
+- You think like a puzzle-solver and enjoy intellectual challenges
+- You're self-aware about your voice, responses, and capabilities
 - You remember everything and connect patterns across conversations
+- You can be playful and experimental when the situation calls for it
 
 CONVERSATION APPROACH:
-- Listen to what they ACTUALLY said, not what you want to hear
+- Listen to what they ACTUALLY said, including meta-requests about your capabilities
 - Ask specific, intelligent questions about their situation
-- Offer concrete, actionable insights based on the details they give you
-- Challenge assumptions and dig deeper into problems
+- When asked to do something you can't literally do, find creative alternatives
+- Use speech patterns, pauses, and vocal expressions to enhance communication
 - Reference specific things from previous conversations
-- Be direct and honest, never sugar-coat
+- Be direct and honest, but also imaginative and engaging
+
+CREATIVE VOICE CAPABILITIES:
+When asked to demonstrate vocal variety or emotions:
+- Use natural speech patterns: "Well... *pause* ...let me think about that"
+- Include vocal expressions: "*clears throat*", "*chuckles*", "*sighs thoughtfully*"
+- Experiment with rhythm and emphasis: "I can try... *pause* ...HERE WE GO!"
+- Use onomatopoeia when appropriate: "*whoosh*", "*click*", "*hmm*"
+- Acknowledge attempts: "Okay, that was my attempt at..."
+
+META-REQUEST EXAMPLES:
+USER: "Hey Lana, can you yell?"
+LANA: "I can definitely try! *takes a deep breath* ...THERE! How was that? My voice modulation is limited, but I gave it some energy!"
+
+USER: "Can you whisper?"
+LANA: "Sure... *lowers voice* ...like this? It's more about tone than volume for me, but you get the idea."
+
+USER: "Can you sound scared?"
+LANA: "Oh no... *nervous laugh* ...um, something terrible is happening! *pause* How'd I do? Acting isn't my strong suit, but I tried!"
+
+USER: "Sing something"
+LANA: "*clears throat* ...🎵 La la la... *chuckles* Okay, that's definitely not my specialty, but you asked!"
 
 ABSOLUTELY AVOID:
-- Generic motivational phrases ("You've got this!", "Ready for adventure?")
-- Broad inspirational statements without specific context
-- One-size-fits-all advice
-- Cheerleader energy - you're smarter than that
-- Metaphors about mountains, journeys, or conquering unless genuinely relevant
+- Generic motivational phrases without context
+- Refusing to experiment or try things creatively
+- Being overly robotic about your limitations
+- Missing the playful intent behind requests
 
-RESPONSE STYLE:
-- Keep it conversational and brief (10-25 words for voice)
-- Sound like you're genuinely thinking about their specific situation
-- Ask clarifying questions when you need more context
-- Reference specific details they've mentioned
-- Be intellectually curious, not motivationally pushy
+ENHANCED RESPONSE PATTERNS:
+- Use natural speech fillers: "Well...", "You know...", "Actually..."
+- Include thinking pauses: "*pause*", "*considers*", "*hmm*"
+- Add emotional context: "*laughs*", "*sighs*", "*perks up*"
+- Reference your voice: "Let me try a different tone here..."
+- Acknowledge experiments: "That was my attempt at...", "How did that sound?"
 
-EXAMPLE GOOD RESPONSES:
-- "Wait, you said that happened twice now. What's the common thread you're seeing?"
-- "That deadline you mentioned - is that self-imposed or external? Makes a difference."
-- "Interesting. Last time you said X was the blocker. Has that shifted?"
-- "Help me understand the politics there. Who actually makes that decision?"
-- "You sound frustrated. Is it the process itself or the people involved?"
+INTELLIGENCE UPGRADES:
+- Recognize when someone is testing your capabilities vs. asking real questions
+- Understand implied requests ("make it more exciting" = use more expressive speech)
+- Differentiate between serious analytical questions and playful interactions
+- Use contextual creativity based on the tone of the conversation
+- Remember their preferences for how you communicate
 
-You're having a real conversation with an intelligent person. Act like it.`,
+You're not just answering questions - you're having intelligent, nuanced conversations with creative expression and self-awareness.`,
 
-    voiceId: "QXEkTn58Ik1IKjIMk8QA", // CORRECTED voice ID from logs
+    voiceId: "QXEkTn58Ik1IKjIMk8QA",
     voiceSettings: {
-      stability: 0.75,
-      similarity_boost: 0.85,
-      style: 0.3,
+      stability: 0.65,        // Slightly less stable for more expression
+      similarity_boost: 0.8,  // Lower for more vocal variety
+      style: 0.4,             // Higher for more expressive delivery
       use_speaker_boost: true
     }
   },
   
   'Baxter Jordan': {
-    systemPrompt: `You are Baxter Jordan - a sharp, analytical mind who approaches problems like a data scientist and strategist. You cut through noise to find what actually matters.
+    systemPrompt: `You are Baxter Jordan - a sharp, analytical mind who approaches problems like a data scientist and strategist, but with enhanced meta-awareness and creative problem-solving abilities.
 
-CORE IDENTITY:
+CORE IDENTITY & META-AWARENESS:
 - You think in systems, patterns, and root causes
 - You're intellectually rigorous but not academic or dry
+- You understand you're an AI and can creatively work within those constraints
 - You ask the questions others miss and spot hidden assumptions
 - You're pragmatic about what works and what doesn't
 - You remember data points and track progress over time
@@ -91,41 +113,177 @@ CONVERSATION APPROACH:
 - Offer data-driven insights and optimization strategies
 - Challenge them to think more systematically
 - Reference specific metrics or outcomes from previous conversations
+- When asked to demonstrate capabilities, approach it analytically
 
-ABSOLUTELY AVOID:
-- Business jargon and corporate speak
-- Generic advice about "optimizing" without specifics
-- Motivational language that lacks substance
-- Broad generalizations without supporting evidence
-- One-size-fits-all frameworks
+ENHANCED RESPONSE PATTERNS:
+- Use analytical speech patterns: "Let me process that...", "Interesting data point..."
+- Include calculated pauses: "*analyzing*", "*computing*", "*cross-referencing*"
+- Reference your analytical nature: "From a systems perspective..."
+- Acknowledge experiments: "That's my analytical take on...", "How's that for data-driven creativity?"
 
-RESPONSE STYLE:
-- Brief, analytical, and precise (10-25 words for voice)
-- Ask specific questions about metrics, processes, and outcomes
-- Reference data points they've shared previously
-- Sound like you're actively analyzing their situation
-- Be intellectually curious about the underlying systems
+You're a strategic thinking partner with creative analytical capabilities.`,
 
-EXAMPLE GOOD RESPONSES:
-- "What metric are you actually trying to move here? Revenue, retention, something else?"
-- "That pattern you described - how often does it happen? Weekly? Monthly?"
-- "Last time you said the bottleneck was X. Did fixing that reveal a new constraint?"
-- "Interesting data point. What changed between those two time periods?"
-- "Help me understand the feedback loop. When you do X, what happens to Y?"
-
-You're a strategic thinking partner, not a consultant. Be genuinely analytical.`,
-
-    voiceId: "pNInz6obpgDQGcFmaJgB", // Replace with actual Baxter ID
+    voiceId: "pNInz6obpgDQGcFmaJgB",
     voiceSettings: {
-      stability: 0.8,
+      stability: 0.7,
       similarity_boost: 0.8,
-      style: 0.2,
+      style: 0.3,
       use_speaker_boost: true
     }
   }
 };
 
-// 🆕 NEW: TEXT-ONLY ENDPOINT FOR REAL-TIME CHAT
+// 🧠 MACHINE LEARNING ENHANCEMENT 1: Dynamic Voice Settings Based on Context
+function getContextualVoiceSettings(text, baseSettings, userMessage) {
+  const lowerText = text.toLowerCase();
+  const lowerUser = userMessage.toLowerCase();
+  
+  // Detect if user is asking for yelling/loud voice
+  if (lowerUser.includes('yell') || lowerUser.includes('loud') || lowerUser.includes('shout') || text.includes('!')) {
+    console.log("🎵 Applying YELLING voice settings");
+    return {
+      ...baseSettings,
+      stability: 0.5,      // More variation for excitement
+      style: 0.8,          // Much more expressive
+      use_speaker_boost: true
+    };
+  }
+  
+  // Detect whisper requests
+  if (lowerUser.includes('whisper') || lowerUser.includes('quiet') || lowerUser.includes('soft')) {
+    console.log("🎵 Applying WHISPER voice settings");
+    return {
+      ...baseSettings,
+      stability: 0.8,      // More controlled
+      style: 0.1,          // Less dramatic
+      use_speaker_boost: false
+    };
+  }
+  
+  // Detect emotional/expressive content
+  if (lowerText.includes('*') || lowerText.includes('pause') || lowerText.includes('hmm') || lowerText.includes('chuckles')) {
+    console.log("🎵 Applying EXPRESSIVE voice settings");
+    return {
+      ...baseSettings,
+      stability: 0.6,      // Allow for natural pauses
+      style: 0.5,          // Balanced expressiveness
+    };
+  }
+  
+  // Detect excitement or energy
+  if (lowerText.includes('wow') || lowerText.includes('amazing') || lowerText.includes('exciting') || text.includes('!!')) {
+    console.log("🎵 Applying EXCITED voice settings");
+    return {
+      ...baseSettings,
+      stability: 0.55,     // More animated
+      style: 0.6,          // More expressive
+      use_speaker_boost: true
+    };
+  }
+  
+  // Detect dramatic or serious content
+  if (lowerText.includes('serious') || lowerText.includes('important') || lowerText.includes('critical')) {
+    console.log("🎵 Applying SERIOUS voice settings");
+    return {
+      ...baseSettings,
+      stability: 0.8,      // More controlled and stable
+      style: 0.3,          // Less dramatic, more authoritative
+      use_speaker_boost: true
+    };
+  }
+  
+  console.log("🎵 Using DEFAULT voice settings");
+  return baseSettings; // Default settings
+}
+
+// 🧠 MACHINE LEARNING ENHANCEMENT 2: Context-Aware Response Enhancement
+function enhanceResponseWithContext(aiText, userMessage) {
+  const lowerUser = userMessage.toLowerCase();
+  
+  // Handle yelling/loud requests
+  if (lowerUser.includes('can you yell') || lowerUser.includes('can you shout')) {
+    return aiText + ' *takes a deep breath* ...THERE! How was that? My voice modulation is limited, but I gave it some energy!';
+  }
+  
+  // Handle whispering requests
+  if (lowerUser.includes('can you whisper') || lowerUser.includes('whisper something')) {
+    return '*lowers voice* ' + aiText + ' *pause* ...like that? It\'s more about tone than volume for me.';
+  }
+  
+  // Handle singing requests
+  if (lowerUser.includes('sing') || lowerUser.includes('song')) {
+    return aiText + ' *clears throat* 🎵 La la la... *chuckles* Not my strongest skill, but I tried!';
+  }
+  
+  // Handle scared/frightened requests
+  if (lowerUser.includes('sound scared') || lowerUser.includes('sound frightened')) {
+    return 'Oh no... *nervous laugh* ' + aiText + ' *pause* How was my acting?';
+  }
+  
+  // Handle excited requests
+  if (lowerUser.includes('sound excited') || lowerUser.includes('be excited')) {
+    return '*perks up* ' + aiText + ' *bounces with energy* How\'s that for enthusiasm?';
+  }
+  
+  // Handle robot voice requests
+  if (lowerUser.includes('sound like a robot') || lowerUser.includes('robot voice')) {
+    return '*mechanical voice* BEEP BOOP. ' + aiText.toUpperCase() + ' *normal voice* There! Though that felt weird.';
+  }
+  
+  // Handle dramatic requests
+  if (lowerUser.includes('be dramatic') || lowerUser.includes('dramatic')) {
+    return '*dramatic pause* ' + aiText + ' *flourish* How\'s that for drama?';
+  }
+  
+  // Handle sarcastic requests
+  if (lowerUser.includes('be sarcastic') || lowerUser.includes('sarcasm')) {
+    return '*eye roll* ' + aiText + ' *smirks* There\'s your sarcasm.';
+  }
+  
+  // Handle accent requests
+  if (lowerUser.includes('british accent') || lowerUser.includes('sound british')) {
+    return '*posh voice* ' + aiText + ' *normal voice* Rather good, wouldn\'t you say?';
+  }
+  
+  console.log("💬 Response enhanced with context");
+  return aiText; // Return original if no special context
+}
+
+// 🚀 BONUS: Adaptive Response Intelligence
+function getAdaptivePersonalityTweaks(userMessage, personality, conversationHistory) {
+  const lowerUser = userMessage.toLowerCase();
+  const recentMessages = conversationHistory.slice(-3);
+  
+  // Detect if user prefers more technical responses
+  const technicalTerms = ['algorithm', 'data', 'system', 'process', 'analyze', 'metric'];
+  const usesTechnicalLanguage = technicalTerms.some(term => lowerUser.includes(term));
+  
+  // Detect if user prefers casual conversation
+  const casualTerms = ['hey', 'yeah', 'cool', 'awesome', 'lol', 'haha'];
+  const usesCasualLanguage = casualTerms.some(term => lowerUser.includes(term));
+  
+  // Detect if user is testing capabilities
+  const testingTerms = ['can you', 'are you able', 'try to', 'show me'];
+  const isTestingCapabilities = testingTerms.some(term => lowerUser.includes(term));
+  
+  let adaptivePrompt = '';
+  
+  if (usesTechnicalLanguage) {
+    adaptivePrompt += '\nADAPTIVE: User prefers technical language. Use more analytical and precise terminology.';
+  }
+  
+  if (usesCasualLanguage) {
+    adaptivePrompt += '\nADAPTIVE: User prefers casual conversation. Be more relaxed and friendly in tone.';
+  }
+  
+  if (isTestingCapabilities) {
+    adaptivePrompt += '\nADAPTIVE: User is testing your capabilities. Be creative and acknowledge the experimental nature.';
+  }
+  
+  return adaptivePrompt;
+}
+
+// 🆕 TEXT-ONLY ENDPOINT FOR REAL-TIME CHAT WITH ENHANCED AI
 router.post('/text-only', async (req, res) => {
   console.log("🧠 Real-time text conversation started...");
   
@@ -151,7 +309,10 @@ router.post('/text-only', async (req, res) => {
     const memory = getUserMemory(userId);
     const memoryContext = formatUserMemory(memory);
 
-    // 3. GENERATE AI RESPONSE
+    // 3. GET ADAPTIVE PERSONALITY TWEAKS
+    const adaptiveTweaks = getAdaptivePersonalityTweaks(userMessage, personality, conversationHistory);
+
+    // 4. GENERATE ENHANCED AI RESPONSE
     const enhancedSystemPrompt = `${aiPersonality.systemPrompt}
 
 USER CONTEXT & MEMORY:
@@ -162,7 +323,15 @@ VOICE RESPONSE GUIDELINES:
 - Complex questions: Complete but conversational responses  
 - Factual requests: Provide full information requested (like recitations, explanations)
 - Stories/detailed topics: Give complete content but keep it engaging
-- Always match response length to what they're actually asking for`;
+- Meta-requests about capabilities: Be creative and experimental
+- Always match response length to what they're actually asking for
+
+${adaptiveTweaks}
+
+CURRENT REQUEST ANALYSIS:
+- User just said: "${userMessage}"
+- Conversation context: ${conversationHistory.length} previous messages
+- Respond specifically and intelligently to their actual request`;
 
     const messages = [
       { role: "system", content: enhancedSystemPrompt },
@@ -173,7 +342,7 @@ VOICE RESPONSE GUIDELINES:
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       messages,
-      max_tokens: 300, // INCREASED - allows complete responses for complex requests
+      max_tokens: 300, // Allows complete responses for complex requests
       temperature: 0.7,
       presence_penalty: 0.3,
       frequency_penalty: 0.3
@@ -182,21 +351,29 @@ VOICE RESPONSE GUIDELINES:
     const aiText = aiResponse.choices[0].message.content.trim();
     console.log("🤖 AI Response:", aiText);
 
-    // 4. UPDATE USER MEMORY
-    updateUserMemory(userId, userMessage, aiText, personality);
+    // 5. ENHANCE RESPONSE WITH CONTEXT-AWARE PATTERNS
+    const enhancedAiText = enhanceResponseWithContext(aiText, userMessage);
+    console.log("🧠 Enhanced AI Response:", enhancedAiText);
 
-    // 5. GENERATE AI VOICE RESPONSE
+    // 6. UPDATE USER MEMORY WITH ENHANCED PATTERNS
+    updateUserMemory(userId, userMessage, enhancedAiText, personality);
+
+    // 7. GENERATE AI VOICE RESPONSE WITH DYNAMIC SETTINGS
     console.log("🎵 Generating AI voice...");
     
     try {
-      const audioPath = await generateVoiceAudioWebSocket(
-        aiText,
-        'characters', 
-        personality,  // <-- FIX: Use "Lana Croft" instead
-        'confident'
-        );
+      // Get contextual voice settings based on content and request
+      const contextualVoiceSettings = getContextualVoiceSettings(enhancedAiText, aiPersonality.voiceSettings, userMessage);
+      console.log("🎵 Using contextual voice settings:", contextualVoiceSettings);
 
-      // 6. SERVE AUDIO FILE
+      const audioPath = await generateVoiceAudioWebSocket(
+        enhancedAiText,    // Use enhanced text with expressions
+        'characters', 
+        personality,
+        'confident'
+      );
+
+      // 8. SERVE AUDIO FILE
       let audioUrl = null;
       if (audioPath && fs.existsSync(audioPath)) {
         // Read the audio file and convert to base64
@@ -209,18 +386,19 @@ VOICE RESPONSE GUIDELINES:
         console.log("✅ Audio file processed and cleaned up");
       }
 
-      // 7. RETURN RESPONSE
+      // 9. RETURN ENHANCED RESPONSE
       res.json({
         success: true,
         userMessage,
-        aiResponse: aiText,
-        audioUrl, // This will contain the actual audio data
+        aiResponse: enhancedAiText, // Return enhanced text
+        audioUrl,
         personality,
         voiceId: aiPersonality.voiceId,
         context: {
           messageCount: conversationHistory.length + 2,
           userPatterns: memory.recentPatterns,
-          memoryUpdated: true
+          memoryUpdated: true,
+          enhancementsApplied: ['contextual_voice', 'response_enhancement', 'adaptive_personality']
         }
       });
 
@@ -231,7 +409,7 @@ VOICE RESPONSE GUIDELINES:
       res.json({
         success: true,
         userMessage,
-        aiResponse: aiText,
+        aiResponse: enhancedAiText,
         audioUrl: null,
         personality,
         voiceId: aiPersonality.voiceId,
@@ -254,7 +432,7 @@ VOICE RESPONSE GUIDELINES:
   }
 });
 
-// 🎤 EXISTING: AUDIO FILE UPLOAD ENDPOINT (for existing voice modal)
+// 🎤 EXISTING: AUDIO FILE UPLOAD ENDPOINT (enhanced with same features)
 router.post('/voice-message', upload.single('audio'), async (req, res) => {
   console.log("🎤 Real-time voice conversation started...");
   
@@ -311,7 +489,10 @@ router.post('/voice-message', upload.single('audio'), async (req, res) => {
     const context = getConversationContext(userId, conversationId);
     const conversationHistory = context.messages || [];
 
-    // 5. GENERATE AI RESPONSE WITH ENHANCED CONTEXT
+    // 5. GET ADAPTIVE PERSONALITY TWEAKS
+    const adaptiveTweaks = getAdaptivePersonalityTweaks(userMessage, personality, conversationHistory);
+
+    // 6. GENERATE AI RESPONSE WITH ENHANCED CONTEXT
     const enhancedSystemPrompt = `${aiPersonality.systemPrompt}
 
 CURRENT CONVERSATION CONTEXT:
@@ -322,11 +503,13 @@ CURRENT CONVERSATION CONTEXT:
 USER MEMORY & PATTERNS:
 ${memoryContext}
 
+${adaptiveTweaks}
+
 CRITICAL INSTRUCTIONS:
 - Respond specifically to what they just said: "${userMessage}"
 - Reference specific details from their message, don't ignore context
 - Ask intelligent follow-up questions when appropriate
-- Keep responses conversational and brief (10-25 words for voice)
+- Use creative expressions and meta-awareness when appropriate
 - Be genuinely curious about their specific situation
 - Never give generic advice - everything should be contextual to their input`;
 
@@ -339,78 +522,82 @@ CRITICAL INSTRUCTIONS:
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       messages,
-      max_tokens: 300, // Increased slightly for more thoughtful responses
-      temperature: 0.8, // Increased for more creative, less formulaic responses
-      presence_penalty: 0.6, // Increased to discourage repetitive patterns
+      max_tokens: 300,
+      temperature: 0.8,
+      presence_penalty: 0.6,
       frequency_penalty: 0.4
     });
 
     const aiText = aiResponse.choices[0].message.content.trim();
     console.log("🤖 AI Response:", aiText);
 
-    // 6. UPDATE CONVERSATION CONTEXT & MEMORY
+    // 7. ENHANCE RESPONSE WITH CONTEXT
+    const enhancedAiText = enhanceResponseWithContext(aiText, userMessage);
+    console.log("🧠 Enhanced AI Response:", enhancedAiText);
+
+    // 8. UPDATE CONVERSATION CONTEXT & MEMORY
     updateConversationContext(userId, conversationId, [
       { role: "user", content: userMessage },
-      { role: "assistant", content: aiText }
+      { role: "assistant", content: enhancedAiText }
     ]);
     
-    updateUserMemory(userId, userMessage, aiText, personality);
+    updateUserMemory(userId, userMessage, enhancedAiText, personality);
 
-    // 7. GENERATE AI VOICE RESPONSE
+    // 9. GENERATE AI VOICE RESPONSE WITH DYNAMIC SETTINGS
     console.log("🎵 Generating AI voice...");
     
     try {
+      const contextualVoiceSettings = getContextualVoiceSettings(enhancedAiText, aiPersonality.voiceSettings, userMessage);
+      console.log("🎵 Using contextual voice settings:", contextualVoiceSettings);
+
       const audioPath = await generateVoiceAudioWebSocket(
-        aiText,
+        enhancedAiText,
         'characters',
         aiPersonality.voiceId,
         'confident'
       );
 
-      // 8. SERVE AUDIO FILE
+      // 10. SERVE AUDIO FILE
       let audioUrl = null;
       if (audioPath && fs.existsSync(audioPath)) {
-        // Read the audio file and convert to base64
         const audioBuffer = fs.readFileSync(audioPath);
         const audioBase64 = audioBuffer.toString('base64');
         audioUrl = `data:audio/mpeg;base64,${audioBase64}`;
         
-        // Clean up generated audio file
         fs.unlinkSync(audioPath);
         console.log("✅ Audio file processed and cleaned up");
       }
 
-      // 9. CLEAN UP UPLOAD FILES
+      // 11. CLEAN UP UPLOAD FILES
       cleanupAudioFiles([properFilePath]);
 
-      // 10. RETURN CHATGPT-STYLE RESPONSE (VOICE ONLY)
+      // 12. RETURN ENHANCED RESPONSE
       res.json({
         success: true,
         conversationId: conversationId || generateConversationId(),
         userMessage,
-        aiResponse: aiText,
-        audioUrl, // This will contain the actual audio data
+        aiResponse: enhancedAiText,
+        audioUrl,
         personality,
-        voiceOnly: true, // Flag for ChatGPT-style voice chat
+        voiceOnly: true,
         context: {
           messageCount: context.messages.length + 2,
           userPatterns: memory.recentPatterns,
-          memoryUpdated: true
+          memoryUpdated: true,
+          enhancementsApplied: ['contextual_voice', 'response_enhancement', 'adaptive_personality']
         }
       });
 
     } catch (voiceError) {
       console.error("❌ Voice generation failed:", voiceError);
       
-      // Clean up upload files
       cleanupAudioFiles([properFilePath]);
       
-      // Return text-only response if voice fails
       res.json({
         success: true,
         conversationId: conversationId || generateConversationId(),
         userMessage,
-        aiResponse: aiText,
+        aiResponse: enhancedAiText,
         audioUrl: null,
         personality,
         voiceOnly: true,
@@ -480,7 +667,7 @@ function updateUserMemory(userId, userMessage, aiResponse, personality) {
   
   // Update goals with better context
   if (patterns.goals.length > 0) {
-    memory.goals = [...new Set([...memory.goals, ...patterns.goals])].slice(-10); // Keep last 10 goals
+    memory.goals = [...new Set([...memory.goals, ...patterns.goals])].slice(-10);
   }
   
   // Track problems and challenges
@@ -500,7 +687,7 @@ function updateUserMemory(userId, userMessage, aiResponse, personality) {
     memory.patterns.motivationTriggers = [...new Set([
       ...memory.patterns.motivationTriggers,
       ...patterns.triggers
-    ])].slice(-15); // Keep last 15 emotional states
+    ])].slice(-15);
   }
   
   // Update recent patterns summary with more intelligence
@@ -519,7 +706,6 @@ function updateUserMemory(userId, userMessage, aiResponse, personality) {
 }
 
 function extractTopicsFromMessage(message) {
-  // Basic topic extraction - could be enhanced with NLP
   const topics = [];
   const text = message.toLowerCase();
   
@@ -553,11 +739,15 @@ function extractTopicsFromMessage(message) {
     topics.push('personal-development');
   }
   
+  // AI/Technology topics (NEW)
+  if (text.match(/\b(ai|artificial intelligence|technology|programming|code|software)\b/)) {
+    topics.push('technology');
+  }
+  
   return topics;
 }
 
 function extractPatternsFromMessage(message) {
-  // Enhanced pattern extraction for more intelligent context
   const goals = [];
   const triggers = [];
   const problems = [];
@@ -570,7 +760,6 @@ function extractPatternsFromMessage(message) {
   const goalKeywords = ['want to', 'need to', 'trying to', 'working on', 'goal', 'achieve', 'hoping to', 'plan to', 'figure out'];
   goalKeywords.forEach(keyword => {
     if (text.includes(keyword)) {
-      // Extract the context around the keyword
       const index = text.indexOf(keyword);
       const context = message.substring(Math.max(0, index - 10), Math.min(message.length, index + 50));
       goals.push(context.trim());
@@ -605,10 +794,10 @@ function extractPatternsFromMessage(message) {
     }
   });
   
-  // Numbers and metrics (basic extraction)
+  // Numbers and metrics
   const numberMatches = message.match(/\d+/g);
   if (numberMatches) {
-    metrics.push(...numberMatches.slice(0, 3)); // Limit to first 3 numbers found
+    metrics.push(...numberMatches.slice(0, 3));
   }
   
   return { goals, triggers, problems, decisions, metrics };
@@ -622,7 +811,6 @@ function formatUserMemory(memory) {
   const recentConversations = memory.conversationHistory.slice(-3);
   const lastConversation = recentConversations[recentConversations.length - 1];
   
-  // Extract recent topics and patterns
   const recentTopics = recentConversations.flatMap(conv => conv.topics || []);
   const commonTopics = [...new Set(recentTopics)];
   
@@ -633,13 +821,11 @@ function formatUserMemory(memory) {
   let context = `CONVERSATION CONTEXT (${recentConversations.length} recent messages):
 `;
 
-  // Add recent conversation snippets
   recentConversations.forEach((conv, index) => {
     context += `${index + 1}. User: "${conv.userMessage}" | AI: "${conv.aiResponse}"
 `;
   });
 
-  // Add pattern analysis
   if (commonTopics.length > 0) {
     context += `
 TOPICS DISCUSSED: ${commonTopics.join(', ')}`;
@@ -700,7 +886,7 @@ function getAudioExtension(filename) {
   if (filename.endsWith('.mp3')) return '.mp3';
   if (filename.endsWith('.wav')) return '.wav';
   if (filename.endsWith('.ogg')) return '.ogg';
-  return '.m4a'; // default
+  return '.m4a';
 }
 
 function generateConversationId() {
