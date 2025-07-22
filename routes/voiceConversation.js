@@ -874,6 +874,70 @@ router.get('/memory/:userId', async (req, res) => {
 
 // 🧠 MEMORY MANAGEMENT FUNCTIONS (Enhanced with persistent storage)
 
+// 🧠 ENHANCED MEMORY MANAGEMENT - COMPLETE REPLACEMENT FUNCTIONS
+// Replace your existing memory functions in routes/voiceConversation.js with these:
+
+// 💰 COST MANAGEMENT CONTROLS
+const FACT_EXTRACTION_LIMITS = {
+  maxCallsPerDay: 50,
+  maxCallsPerUser: 10,
+  batchSize: 5,
+  skipShortMessages: true,
+  minMessageLength: 10,
+  dailyUsage: new Map(), // Track daily usage per user
+  lastReset: new Date().toDateString()
+};
+
+// Reset daily counters
+function resetDailyLimits() {
+  const today = new Date().toDateString();
+  if (FACT_EXTRACTION_LIMITS.lastReset !== today) {
+    FACT_EXTRACTION_LIMITS.dailyUsage.clear();
+    FACT_EXTRACTION_LIMITS.lastReset = today;
+    console.log("🔄 Daily fact extraction limits reset");
+  }
+}
+
+// Check if user can extract facts
+function canExtractFacts(userId, userMessage) {
+  resetDailyLimits();
+  
+  // Skip very short messages
+  if (userMessage.length < FACT_EXTRACTION_LIMITS.minMessageLength) {
+    return false;
+  }
+  
+  // Skip common short responses
+  const shortResponses = ['ok', 'thanks', 'yes', 'no', 'sure', 'great', 'cool'];
+  if (shortResponses.includes(userMessage.toLowerCase().trim())) {
+    return false;
+  }
+  
+  // Check daily limits
+  const userUsage = FACT_EXTRACTION_LIMITS.dailyUsage.get(userId) || 0;
+  const totalUsage = Array.from(FACT_EXTRACTION_LIMITS.dailyUsage.values()).reduce((sum, count) => sum + count, 0);
+  
+  if (userUsage >= FACT_EXTRACTION_LIMITS.maxCallsPerUser) {
+    console.log(`⏰ User ${userId} hit daily fact extraction limit`);
+    return false;
+  }
+  
+  if (totalUsage >= FACT_EXTRACTION_LIMITS.maxCallsPerDay) {
+    console.log(`⏰ Daily fact extraction limit reached: ${totalUsage}`);
+    return false;
+  }
+  
+  return true;
+}
+
+// Track usage
+function incrementFactExtractionUsage(userId) {
+  resetDailyLimits();
+  const current = FACT_EXTRACTION_LIMITS.dailyUsage.get(userId) || 0;
+  FACT_EXTRACTION_LIMITS.dailyUsage.set(userId, current + 1);
+}
+
+// 🧠 ENHANCED getUserMemory() FUNCTION
 function getUserMemory(userId) {
   if (!userMemories.has(userId)) {
     userMemories.set(userId, {
@@ -892,7 +956,23 @@ function getUserMemory(userId) {
       },
       achievements: [],
       personalContext: {},
-      recentPatterns: 'New user'
+      recentPatterns: 'New user',
+      // 🎯 NEW: Enhanced fact storage
+      facts: {
+        personal: {},
+        relationships: {},
+        work: {},
+        hobbies: {},
+        possessions: {},
+        experiences: {},
+        preferences: {},
+        skills: {},
+        problems: {},
+        goals: {},
+        memories: {}
+      },
+      // 📅 NEW: Timeline tracking
+      timeline: []
     });
     
     // Auto-save to disk
@@ -901,46 +981,57 @@ function getUserMemory(userId) {
   return userMemories.get(userId);
 }
 
+// 🧠 ENHANCED updateUserMemory() FUNCTION - MAIN REPLACEMENT
 function updateUserMemory(userId, userMessage, aiResponse, personality) {
   const memory = getUserMemory(userId);
   
-  // Extract patterns from conversation
-  const patterns = extractPatternsFromMessage(userMessage);
-  
-  // Update memory with enhanced context
-  memory.conversationHistory.push({
+  // 📝 IMMEDIATE: Save conversation (don't wait for fact extraction)
+  const conversationEntry = {
     timestamp: new Date(),
     userMessage,
     aiResponse,
     personality,
-    patterns,
     messageLength: userMessage.length,
-    topics: extractTopicsFromMessage(userMessage)
-  });
+    topics: extractTopicsFromMessage(userMessage),
+    factsExtracted: false, // Will be updated later
+    factExtractionPending: canExtractFacts(userId, userMessage)
+  };
   
-  // Keep only last 50 conversations to prevent memory bloat
+  memory.conversationHistory.push(conversationEntry);
+  
+  // Keep only last 50 conversations
   if (memory.conversationHistory.length > 50) {
     memory.conversationHistory = memory.conversationHistory.slice(-50);
   }
   
-  // Update goals with better context
+  // 🔄 BACKGROUND: Extract facts asynchronously (non-blocking)
+  if (canExtractFacts(userId, userMessage)) {
+    setImmediate(async () => {
+      try {
+        await processFactExtractionAsync(userId, userMessage, aiResponse, conversationEntry);
+      } catch (error) {
+        console.error(`❌ Background fact extraction failed for user ${userId}:`, error);
+      }
+    });
+  }
+  
+  // 📊 IMMEDIATE: Update patterns and existing logic
+  const patterns = extractPatternsFromMessage(userMessage);
+  
   if (patterns.goals.length > 0) {
     memory.goals = [...new Set([...memory.goals, ...patterns.goals])].slice(-10);
   }
   
-  // Track problems and challenges
   if (patterns.problems.length > 0) {
     if (!memory.patterns.problems) memory.patterns.problems = [];
     memory.patterns.problems = [...new Set([...memory.patterns.problems, ...patterns.problems])].slice(-10);
   }
   
-  // Track decisions they're making
   if (patterns.decisions.length > 0) {
     if (!memory.patterns.decisions) memory.patterns.decisions = [];
     memory.patterns.decisions = [...new Set([...memory.patterns.decisions, ...patterns.decisions])].slice(-10);
   }
   
-  // Update emotional triggers
   if (patterns.triggers.length > 0) {
     memory.patterns.motivationTriggers = [...new Set([
       ...memory.patterns.motivationTriggers,
@@ -948,14 +1039,13 @@ function updateUserMemory(userId, userMessage, aiResponse, personality) {
     ])].slice(-15);
   }
   
-  // Update topics
   const newTopics = extractTopicsFromMessage(userMessage);
   if (newTopics.length > 0) {
     if (!memory.patterns.topics) memory.patterns.topics = [];
     memory.patterns.topics = [...new Set([...memory.patterns.topics, ...newTopics])].slice(-20);
   }
   
-  // Update recent patterns summary with more intelligence
+  // Update recent patterns
   const recentConversations = memory.conversationHistory.slice(-5);
   const recentTopics = recentConversations.flatMap(conv => conv.topics || []);
   const commonTopics = [...new Set(recentTopics)].slice(0, 3);
@@ -972,43 +1062,353 @@ function updateUserMemory(userId, userMessage, aiResponse, personality) {
   // Auto-save to disk
   persistentMemory.saveUserMemories();
   
-  console.log(`🧠 Enhanced memory updated for user ${userId} - ${memory.conversationHistory.length} total conversations`);
+  console.log(`🧠 Memory updated immediately for user ${userId} - ${memory.conversationHistory.length} conversations`);
 }
 
+// 🎯 ASYNC FACT EXTRACTION PROCESSOR
+async function processFactExtractionAsync(userId, userMessage, aiResponse, conversationEntry) {
+  try {
+    incrementFactExtractionUsage(userId);
+    
+    const extractedFacts = await extractFactsWithAI(userMessage, aiResponse);
+    const memory = getUserMemory(userId);
+    
+    // Initialize facts structure if needed
+    if (!memory.facts) {
+      memory.facts = {
+        personal: {},
+        relationships: {},
+        work: {},
+        hobbies: {},
+        possessions: {},
+        experiences: {},
+        preferences: {},
+        skills: {},
+        problems: {},
+        goals: {},
+        memories: {}
+      };
+    }
+    
+    // 🔄 UPDATE FACTS WITH DEDUPLICATION & CHANGE TRACKING
+    let factsUpdated = 0;
+    Object.keys(extractedFacts).forEach(category => {
+      if (!memory.facts[category]) memory.facts[category] = {};
+      
+      extractedFacts[category].forEach(fact => {
+        factsUpdated++;
+        updateFactWithHistory(memory.facts[category], fact.key, fact.value, fact.context, fact.confidence);
+      });
+    });
+    
+    // 📅 UPDATE TIMELINE
+    if (!memory.timeline) memory.timeline = [];
+    
+    const today = new Date().toISOString().split('T')[0];
+    let todayEntry = memory.timeline.find(entry => entry.date === today);
+    
+    if (!todayEntry) {
+      todayEntry = {
+        date: today,
+        conversations: [],
+        facts_learned: [],
+        topics_discussed: [],
+        key_events: []
+      };
+      memory.timeline.push(todayEntry);
+    }
+    
+    // Add conversation summary
+    const conversationSummary = await generateConversationSummary(userMessage, aiResponse);
+    todayEntry.conversations.push({
+      time: new Date().toISOString(),
+      summary: conversationSummary,
+      factsExtracted: factsUpdated
+    });
+    
+    // Track new facts learned
+    Object.keys(extractedFacts).forEach(category => {
+      extractedFacts[category].forEach(fact => {
+        todayEntry.facts_learned.push(`${fact.key}: ${fact.value}`);
+      });
+    });
+    
+    // Keep only last 60 days
+    if (memory.timeline.length > 60) {
+      memory.timeline = memory.timeline.slice(-60);
+    }
+    
+    // Update the conversation entry to mark facts as extracted
+    const conversationIndex = memory.conversationHistory.findIndex(
+      conv => conv.timestamp.getTime() === conversationEntry.timestamp.getTime()
+    );
+    if (conversationIndex !== -1) {
+      memory.conversationHistory[conversationIndex].factsExtracted = true;
+      memory.conversationHistory[conversationIndex].factCount = factsUpdated;
+    }
+    
+    // Save updated memory
+    userMemories.set(userId, memory);
+    persistentMemory.saveUserMemories();
+    
+    console.log(`🎯 Background fact extraction completed for user ${userId}: ${factsUpdated} facts`);
+    
+  } catch (error) {
+    console.error(`❌ Async fact extraction failed for user ${userId}:`, error);
+  }
+}
+
+// 🔄 FACT UPDATE WITH CHANGE HISTORY
+function updateFactWithHistory(categoryFacts, key, newValue, context, confidence) {
+  const existing = categoryFacts[key];
+  
+  if (!existing) {
+    // New fact
+    categoryFacts[key] = {
+      value: newValue,
+      context: context,
+      confidence: confidence,
+      firstMentioned: new Date().toISOString(),
+      lastMentioned: new Date().toISOString(),
+      mentionCount: 1,
+      relationships: []
+    };
+  } else if (existing.value !== newValue) {
+    // Fact changed - archive old value
+    if (!existing.previousValues) existing.previousValues = [];
+    
+    existing.previousValues.push({
+      value: existing.value,
+      context: existing.context,
+      confidence: existing.confidence,
+      dateChanged: new Date().toISOString()
+    });
+    
+    // Update with new value
+    existing.value = newValue;
+    existing.context = context;
+    existing.confidence = Math.max(existing.confidence, confidence); // Keep highest confidence
+    existing.lastMentioned = new Date().toISOString();
+    existing.mentionCount += 1;
+    
+    console.log(`🔄 Updated fact ${key}: ${existing.previousValues[existing.previousValues.length - 1].value} → ${newValue}`);
+  } else {
+    // Same fact mentioned again - just update metadata
+    existing.lastMentioned = new Date().toISOString();
+    existing.mentionCount += 1;
+    existing.confidence = Math.max(existing.confidence, confidence);
+  }
+}
+
+// 🎯 AI-POWERED FACT EXTRACTION WITH ERROR HANDLING
+async function extractFactsWithAI(userMessage, aiResponse) {
+  try {
+    const factExtractionPrompt = `You are a memory extraction specialist. Extract ALL meaningful facts from this conversation that could be referenced later.
+
+CONVERSATION:
+User: "${userMessage}"
+AI: "${aiResponse}"
+
+Extract facts in this JSON format:
+{
+  "personal": [{"key": "name", "value": "John", "context": "introduced himself", "confidence": 0.9}],
+  "relationships": [{"key": "spouse", "value": "Sarah", "context": "mentioned wife", "confidence": 0.8}],
+  "work": [{"key": "company", "value": "Google", "context": "works at", "confidence": 0.9}],
+  "hobbies": [{"key": "woodworking", "value": "builds decks", "context": "mentioned building deck", "confidence": 0.8}],
+  "possessions": [{"key": "deck_nails", "value": "3-inch galvanized", "context": "used for deck building", "confidence": 0.7}],
+  "experiences": [{"key": "deck_project", "value": "built deck last month", "context": "home improvement", "confidence": 0.8}],
+  "preferences": [{"key": "coffee", "value": "black coffee", "context": "drinks every morning", "confidence": 0.9}],
+  "skills": [{"key": "construction", "value": "deck building", "context": "DIY project", "confidence": 0.7}],
+  "problems": [{"key": "work_stress", "value": "deadline pressure", "context": "mentioned feeling overwhelmed", "confidence": 0.8}],
+  "goals": [{"key": "fitness", "value": "lose 10 pounds", "context": "new year resolution", "confidence": 0.9}],
+  "memories": [{"key": "childhood_dog", "value": "Golden Retriever named Max", "context": "fond memory", "confidence": 0.8}]
+}
+
+RULES:
+1. Extract EVERYTHING specific that could be referenced later
+2. Include brand names, specific details, numbers, dates
+3. Capture casual mentions (not just explicit statements)
+4. Include context for why this fact matters
+5. Rate confidence 0.1-1.0 based on clarity
+6. Focus on personal, memorable, specific details
+7. If no meaningful facts, return empty arrays for each category
+
+Only return valid JSON, no other text.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-turbo",
+      messages: [{ role: "user", content: factExtractionPrompt }],
+      max_tokens: 600,
+      temperature: 0.1,
+      timeout: 10000 // 10 second timeout
+    });
+
+    const factText = response.choices[0].message.content.trim();
+    
+    // Clean up JSON if it has markdown formatting
+    const cleanJson = factText.replace(/```json\n?|\n?```/g, '').trim();
+    
+    try {
+      const facts = JSON.parse(cleanJson);
+      
+      // Validate structure
+      const validCategories = ['personal', 'relationships', 'work', 'hobbies', 'possessions', 'experiences', 'preferences', 'skills', 'problems', 'goals', 'memories'];
+      const validatedFacts = {};
+      
+      validCategories.forEach(category => {
+        validatedFacts[category] = Array.isArray(facts[category]) ? facts[category] : [];
+      });
+      
+      console.log(`🎯 AI extracted ${Object.values(validatedFacts).flat().length} facts`);
+      return validatedFacts;
+      
+    } catch (parseError) {
+      console.error("❌ Failed to parse fact extraction JSON:", parseError);
+      console.error("❌ Raw response:", factText);
+      
+      // 🛡️ FALLBACK: Use basic regex extraction
+      return extractFactsBasic(userMessage);
+    }
+    
+  } catch (error) {
+    console.error("❌ AI fact extraction failed:", error);
+    
+    // 🛡️ FALLBACK: Use basic regex extraction
+    return extractFactsBasic(userMessage);
+  }
+}
+
+// 🛡️ FALLBACK: BASIC REGEX FACT EXTRACTION
+function extractFactsBasic(message) {
+  const facts = {
+    personal: [], relationships: [], work: [], hobbies: [], possessions: [],
+    experiences: [], preferences: [], skills: [], problems: [], goals: [], memories: []
+  };
+  
+  const lowerMessage = message.toLowerCase();
+  
+  // Basic name extraction
+  const nameMatch = message.match(/(?:my name is|i'm|i am|call me) (\w+)/i);
+  if (nameMatch) {
+    facts.personal.push({ key: 'name', value: nameMatch[1], context: 'introduced', confidence: 0.9 });
+  }
+  
+  // Basic pet extraction
+  const petMatch = message.match(/(?:my|our) (?:dog|cat|pet)(?:'s)? (?:name )?is (\w+)/i);
+  if (petMatch) {
+    facts.relationships.push({ key: 'pet_name', value: petMatch[1], context: 'mentioned pet', confidence: 0.8 });
+  }
+  
+  // Basic work extraction
+  const workMatch = message.match(/(?:i work at|employed at) ([^,.!?]+)/i);
+  if (workMatch) {
+    facts.work.push({ key: 'company', value: workMatch[1].trim(), context: 'mentioned job', confidence: 0.7 });
+  }
+  
+  console.log(`🛡️ Fallback extraction found ${Object.values(facts).flat().length} basic facts`);
+  return facts;
+}
+
+// 🎯 CONVERSATION SUMMARY WITH ERROR HANDLING
+async function generateConversationSummary(userMessage, aiResponse) {
+  try {
+    const summaryPrompt = `Summarize in 1-2 sentences: User: "${userMessage}" AI: "${aiResponse}"`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-turbo", 
+      messages: [{ role: "user", content: summaryPrompt }],
+      max_tokens: 80,
+      temperature: 0.1,
+      timeout: 5000 // 5 second timeout
+    });
+
+    return response.choices[0].message.content.trim();
+  } catch (error) {
+    console.error("❌ Conversation summary failed:", error);
+    
+    // Fallback summary
+    const topicWords = extractTopicsFromMessage(userMessage);
+    return topicWords.length > 0 
+      ? `Discussed ${topicWords.slice(0, 2).join(' and ')}`
+      : "General conversation";
+  }
+}
+
+// 🧠 ENHANCED formatUserMemory() FUNCTION - ADD TO YOUR FILE
 function formatUserMemory(memory) {
   if (!memory || memory.conversationHistory.length === 0) {
     return "New user - no conversation history yet.";
   }
   
-  const recentConversations = memory.conversationHistory.slice(-3);
-  const lastConversation = recentConversations[recentConversations.length - 1];
-  
   let context = `USER MEMORY CONTEXT:
 - Total conversations: ${memory.conversationHistory.length}
-- Recent patterns: ${memory.recentPatterns}
-- Current goals: ${memory.goals.slice(-3).join(', ') || 'None identified yet'}`;
+- Recent patterns: ${memory.recentPatterns}`;
 
-  if (memory.patterns.motivationTriggers && memory.patterns.motivationTriggers.length > 0) {
-    context += `
-- Motivation triggers: ${memory.patterns.motivationTriggers.slice(-5).join(', ')}`;
+  // 🎯 NEW: Add extracted facts to context
+  if (memory.facts) {
+    const factCategories = ['personal', 'relationships', 'work', 'possessions', 'preferences'];
+    let factsAdded = false;
+    
+    factCategories.forEach(category => {
+      if (memory.facts[category] && Object.keys(memory.facts[category]).length > 0) {
+        if (!factsAdded) {
+          context += `\n\n🧠 KNOWN FACTS ABOUT USER:`;
+          factsAdded = true;
+        }
+        
+        context += `\n${category.toUpperCase()}:`;
+        Object.entries(memory.facts[category]).forEach(([key, factData]) => {
+          context += `\n- ${key}: ${factData.value} (${factData.context})`;
+        });
+      }
+    });
   }
 
-  if (memory.patterns.problems && memory.patterns.problems.length > 0) {
-    context += `
-- Recent challenges: ${memory.patterns.problems.slice(-3).join(', ')}`;
+  // 📅 NEW: Add timeline context
+  if (memory.timeline && memory.timeline.length > 0) {
+    const recentTimeline = memory.timeline.slice(-7); // Last 7 days
+    context += `\n\n📅 RECENT TIMELINE:`;
+    
+    recentTimeline.forEach(day => {
+      if (day.facts_learned.length > 0 || day.conversations.length > 0) {
+        const date = new Date(day.date);
+        const isToday = date.toDateString() === new Date().toDateString();
+        const dayLabel = isToday ? 'Today' : date.toLocaleDateString();
+        
+        context += `\n${dayLabel}: `;
+        if (day.facts_learned.length > 0) {
+          context += `learned ${day.facts_learned.slice(0, 2).join(', ')}`;
+        }
+        if (day.conversations.length > 0) {
+          context += ` (${day.conversations.length} conversations)`;
+        }
+      }
+    });
   }
 
-  if (memory.patterns.topics && memory.patterns.topics.length > 0) {
-    context += `
-- Discussion topics: ${memory.patterns.topics.slice(-5).join(', ')}`;
+  // Add existing pattern information
+  if (memory.goals && memory.goals.length > 0) {
+    context += `\n- Current goals: ${memory.goals.slice(-3).join(', ')}`;
   }
 
+  if (memory.patterns?.motivationTriggers && memory.patterns.motivationTriggers.length > 0) {
+    context += `\n- Motivation triggers: ${memory.patterns.motivationTriggers.slice(-5).join(', ')}`;
+  }
+
+  if (memory.patterns?.problems && memory.patterns.problems.length > 0) {
+    context += `\n- Recent challenges: ${memory.patterns.problems.slice(-3).join(', ')}`;
+  }
+
+  if (memory.patterns?.topics && memory.patterns.topics.length > 0) {
+    context += `\n- Discussion topics: ${memory.patterns.topics.slice(-5).join(', ')}`;
+  }
+
+  const lastConversation = memory.conversationHistory[memory.conversationHistory.length - 1];
   if (lastConversation) {
     const lastDate = new Date(lastConversation.timestamp);
     const today = new Date();
     const isToday = lastDate.toDateString() === today.toDateString();
-    context += `
-- Last conversation: ${isToday ? 'Today' : lastDate.toLocaleDateString()}`;
+    context += `\n- Last conversation: ${isToday ? 'Today' : lastDate.toLocaleDateString()}`;
   }
 
   return context;
