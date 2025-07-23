@@ -576,10 +576,11 @@ CURRENT REQUEST ANALYSIS:
       const contextualVoiceSettings = getContextualVoiceSettings(enhancedAiText, aiPersonality.voiceSettings, userMessage);
       console.log("🎵 Using contextual voice settings:", contextualVoiceSettings);
 
+      const elevenLabsText = convertToElevenLabsFormat(enhancedAiText);
       const audioPath = await generateVoiceAudioWebSocket(
-        enhancedAiText,    // Use enhanced text with expressions
-        'characters', 
-        personality,
+        elevenLabsText,
+        'characters',
+        aiPersonality.voiceId,
         'confident'
       );
 
@@ -775,10 +776,11 @@ CRITICAL INSTRUCTIONS:
       const contextualVoiceSettings = getContextualVoiceSettings(enhancedAiText, aiPersonality.voiceSettings, userMessage);
       console.log("🎵 Using contextual voice settings:", contextualVoiceSettings);
 
+      const elevenLabsText = convertToElevenLabsFormat(enhancedAiText);
       const audioPath = await generateVoiceAudioWebSocket(
-        enhancedAiText,
+        elevenLabsText,
         'characters',
-        aiPersonality.voiceId,
+        personality,
         'confident'
       );
 
@@ -965,6 +967,49 @@ function incrementFactExtractionUsage(userId) {
   resetDailyLimits();
   const current = FACT_EXTRACTION_LIMITS.dailyUsage.get(userId) || 0;
   FACT_EXTRACTION_LIMITS.dailyUsage.set(userId, current + 1);
+}
+
+// 🧠 ENHANCED getUserMemory() FUNCTION
+// 🎭 CONVERT OPENAI EMOTIONS TO ELEVENLABS V3 FORMAT
+function convertToElevenLabsFormat(text) {
+  let processedText = text;
+  
+  console.log("🎭 Converting OpenAI format to ElevenLabs v3 format:", text);
+  
+  // 😤 BREATHING/SIGHING - Convert to ElevenLabs format
+  processedText = processedText.replace(/\*sigh\*|\*sighs?\*|\*sighs thoughtfully\*/gi, '[sighs]');
+  processedText = processedText.replace(/\*exhales?\*|\*breathes out\*/gi, '[exhales]');
+  
+  // 😄 LAUGHTER - Convert to ElevenLabs laugh tags
+  processedText = processedText.replace(/\*chuckles?\*|\*chuckling\*/gi, '[laughs]');
+  processedText = processedText.replace(/\*laughs?\*|\*laughing\*/gi, '[laughs]');
+  processedText = processedText.replace(/\*giggles?\*|\*giggling\*/gi, '[laughs]');
+  processedText = processedText.replace(/\*nervous laugh\*/gi, '[laughs]');
+  processedText = processedText.replace(/\*laughs harder\*/gi, '[laughs harder]');
+  
+  // 🗣️ WHISPERING - Convert to ElevenLabs whisper
+  processedText = processedText.replace(/\*whispers?\*|\*whispering\*/gi, '[whispers]');
+  
+  // 🎭 EMOTIONAL EXPRESSIONS - Map to ElevenLabs emotional tags
+  processedText = processedText.replace(/\*sarcastic\*|\*sarcastically\*/gi, '[sarcastic]');
+  processedText = processedText.replace(/\*curious\*|\*curiously\*/gi, '[curious]');
+  processedText = processedText.replace(/\*excited\*|\*excitedly\*/gi, '[excited]');
+  processedText = processedText.replace(/\*crying\*|\*cries\*/gi, '[crying]');
+  processedText = processedText.replace(/\*mischievous\*|\*mischievously\*/gi, '[mischievously]');
+  
+  // 🎵 PAUSES - Convert to ElevenLabs ellipses format
+  processedText = processedText.replace(/\*pause\*|\*pauses?\*/gi, '…');
+  processedText = processedText.replace(/\*long pause\*/gi, '……');
+  
+  // 🧹 CLEAN UP any remaining asterisk actions
+  processedText = processedText.replace(/\*[^*]+\*/g, '');
+  processedText = processedText.replace(/\s+/g, ' ').trim();
+  
+  console.log("🎭 ElevenLabs v3 conversion result:");
+  console.log("   Original:", text);
+  console.log("   Converted:", processedText);
+  
+  return processedText;
 }
 
 // 🧠 ENHANCED getUserMemory() FUNCTION
