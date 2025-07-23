@@ -580,7 +580,7 @@ CURRENT REQUEST ANALYSIS:
       const audioPath = await generateVoiceAudioWebSocket(
         elevenLabsText,
         'characters',
-        aiPersonality.voiceId,
+        personality,
         'confident'
       );
 
