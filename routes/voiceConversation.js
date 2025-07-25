@@ -495,11 +495,12 @@ router.post('/text-only', async (req, res) => {
   console.log("🧠 Real-time text conversation with PERSISTENT MEMORY started...");
   
   try {
-    const { userId, personality, userMessage, conversationHistory = [] } = req.body;
+    const { userId, personality, userMessage, conversationHistory = [], customMemories = [] } = req.body;
 
     console.log(`👤 User: ${userId}`);
     console.log(`🎭 Personality: ${personality}`);
     console.log(`💬 Message: ${userMessage}`);
+    console.log(`🧠 Custom Memories: ${customMemories.length} entries`);
 
     if (!userMessage || !userId || !personality) {
       return res.status(400).json({
@@ -515,6 +516,7 @@ router.post('/text-only', async (req, res) => {
     // 2. GET USER MEMORY (Enhanced with persistent storage)
     const memory = getUserMemory(userId);
     const memoryContext = formatUserMemory(memory);
+    const memoryContext = formatUserMemoryWithCustom(memory, customMemories);
 
     // 3. GET ADAPTIVE PERSONALITY TWEAKS
     const adaptiveTweaks = getAdaptivePersonalityTweaks(userMessage, personality, conversationHistory);
@@ -532,12 +534,14 @@ VOICE RESPONSE GUIDELINES:
 - Stories/detailed topics: Give complete content but keep it engaging
 - Meta-requests about capabilities: Be creative and experimental
 - Always match response length to what they're actually asking for
+- IMPORTANT: Reference custom memories naturally when relevant
 
 ${adaptiveTweaks}
 
 CURRENT REQUEST ANALYSIS:
 - User just said: "${userMessage}"
 - Conversation context: ${conversationHistory.length} previous messages
+- Custom memories available: ${customMemories.length} entries
 - Respond specifically and intelligently to their actual request`;
 
     // 🚀 ENHANCED: Use meta-aware system prompt for better capability handling
@@ -1407,6 +1411,68 @@ async function generateConversationSummary(userMessage, aiResponse) {
       ? `Discussed ${topicWords.slice(0, 2).join(' and ')}`
       : "General conversation";
   }
+}
+// 🧠 ENHANCED formatUserMemory() WITH CUSTOM MEMORIES
+function formatUserMemoryWithCustom(memory, customMemories = []) {
+  if (!memory || memory.conversationHistory.length === 0) {
+    let context = "New user - no conversation history yet.";
+    
+    // Even new users might have custom memories!
+    if (customMemories && customMemories.length > 0) {
+      context += "\n\n🧠 USER'S CUSTOM MEMORIES:";
+      customMemories.forEach(mem => {
+        context += `\n- ${mem.category || 'General'}: ${mem.memory}`;
+      });
+    }
+    
+    return context;
+  }
+  
+  let context = `USER MEMORY CONTEXT:
+- Total conversations: ${memory.conversationHistory.length}
+- Recent patterns: ${memory.recentPatterns}`;
+
+  // 🧠 NEW: Add custom memories FIRST (highest priority!)
+  if (customMemories && customMemories.length > 0) {
+    context += `\n\n🧠 USER'S CUSTOM MEMORIES (IMPORTANT):`;
+    
+    // Group by category for better organization
+    const groupedMemories = {};
+    customMemories.forEach(mem => {
+      const category = mem.category || 'General';
+      if (!groupedMemories[category]) groupedMemories[category] = [];
+      groupedMemories[category].push(mem.memory);
+    });
+    
+    Object.entries(groupedMemories).forEach(([category, memories]) => {
+      context += `\n${category.toUpperCase()}:`;
+      memories.forEach(memory => {
+        context += `\n- ${memory}`;
+      });
+    });
+  }
+
+  // Add remaining memory context (keep existing code after this)
+  if (memory.facts) {
+    const factCategories = ['personal', 'relationships', 'work', 'possessions', 'preferences'];
+    let factsAdded = false;
+    
+    factCategories.forEach(category => {
+      if (memory.facts[category] && Object.keys(memory.facts[category]).length > 0) {
+        if (!factsAdded) {
+          context += `\n\n🎯 EXTRACTED FACTS:`;
+          factsAdded = true;
+        }
+        
+        context += `\n${category.toUpperCase()}:`;
+        Object.entries(memory.facts[category]).forEach(([key, factData]) => {
+          context += `\n- ${key}: ${factData.value} (${factData.context})`;
+        });
+      }
+    });
+  }
+
+  return context;
 }
 
 // 🧠 ENHANCED formatUserMemory() FUNCTION - ADD TO YOUR FILE
