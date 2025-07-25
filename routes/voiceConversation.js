@@ -515,7 +515,6 @@ router.post('/text-only', async (req, res) => {
 
     // 2. GET USER MEMORY (Enhanced with persistent storage)
     const memory = getUserMemory(userId);
-    const memoryContext = formatUserMemory(memory);
     const memoryContext = formatUserMemoryWithCustom(memory, customMemories);
 
     // 3. GET ADAPTIVE PERSONALITY TWEAKS
